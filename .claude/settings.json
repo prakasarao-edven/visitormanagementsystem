@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"# Dependencies:*)",
+      "Bash(.env.example:*)",
+      "Read(//d/VMS/visitormanagementsystem/**)",
+      "Bash(ls -la *.*)"
+    ],
+    "additionalDirectories": [
+      "d:\\VMS\\visitormanagementsystem"
+    ]
+  }
+}
