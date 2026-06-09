@@ -1,54 +1,94 @@
-import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import {
+  NextRequest
+} from "next/server";
 
-export interface AuthPayload {
-  id: number;
-  uuid: string;
-  email: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'SECURITY';
-}
+import {
+  jwtVerify
+} from "jose";
 
-export const verifyAuth = (request: NextRequest): AuthPayload | null => {
+export async function verifyAuth(
+  request: NextRequest
+) {
+
   try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+
+    const token =
+      request.cookies.get(
+        "token"
+      )?.value;
 
     if (!token) {
+
       return null;
+
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as AuthPayload;
-    return decoded;
-  } catch (error) {
-    return null;
+    const secret =
+      new TextEncoder().encode(
+
+        process.env.JWT_SECRET!
+
+      );
+
+    const {
+      payload
+    } = await jwtVerify(
+      token,
+      secret
+    );
+
+    return payload;
+
   }
-};
 
-export const requireAuth = (handler: Function) => {
-  return async (request: NextRequest) => {
-    const user = verifyAuth(request);
+  catch {
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    return null;
 
-    // Store user in request for use in handler
-    (request as any).user = user;
-    return handler(request);
-  };
-};
+  }
 
-export const requireRole = (...roles: string[]) => {
-  return (handler: Function) => {
-    return async (request: NextRequest) => {
-      const user = verifyAuth(request);
+}
 
-      if (!user || !roles.includes(user.role)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
+export async function requireAdmin(
+  request: NextRequest
+) {
 
-      (request as any).user = user;
-      return handler(request);
-    };
-  };
-};
+  const payload =
+    await verifyAuth(
+      request
+    );
+
+  if (
+    !payload ||
+    payload.role !== "ADMIN"
+  ) {
+
+    return false;
+
+  }
+
+  return true;
+
+}
+
+export async function requireSecurity(
+  request: NextRequest
+) {
+
+  const payload =
+    await verifyAuth(
+      request
+    );
+
+  if (
+    !payload ||
+    payload.role !== "SECURITY"
+  ) {
+
+    return false;
+
+  }
+
+  return true;
+
+}

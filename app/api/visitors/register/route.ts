@@ -1,12 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { pool } from '@/lib/db/connection';
-import { generateVisitorCode } from '@/lib/utils/codeGenerator';
+import {
+  NextRequest,
+  NextResponse
+} from "next/server";
+
+import {
+  pool
+} from "@/lib/db/connection";
+
+import {
+  generateVisitorCode
+} from "@/lib/utils/codeGenerator";
+
+import {
+  requireSecurity
+} from "@/lib/middleware/auth";
 
 export async function POST(
   request: NextRequest
 ) {
 
   try {
+
+    const isSecurity =
+      await requireSecurity(
+        request
+      );
+
+    if (!isSecurity) {
+
+      return NextResponse.json(
+
+        {
+          error:
+            "Unauthorized"
+        },
+
+        {
+          status: 401
+        }
+
+      );
+
+    }
 
     const {
 
@@ -39,7 +74,39 @@ export async function POST(
 
         {
           error:
-            'Full name and mobile number are required'
+            "Full name and mobile number are required"
+        },
+
+        {
+          status: 400
+        }
+
+      );
+
+    }
+
+    const sanitizedName =
+      String(fullName)
+        .trim();
+
+    const sanitizedMobile =
+      String(mobileNumber)
+        .replace(/\D/g, "");
+
+    const sanitizedCountryCode =
+      String(countryCode || "+91")
+        .trim();
+
+    if (
+      sanitizedName.length < 2 ||
+      sanitizedName.length > 100
+    ) {
+
+      return NextResponse.json(
+
+        {
+          error:
+            "Full name must be between 2 and 100 characters"
         },
 
         {
@@ -52,7 +119,7 @@ export async function POST(
 
     if (
       !/^\d{10}$/.test(
-        mobileNumber
+        sanitizedMobile
       )
     ) {
 
@@ -60,7 +127,29 @@ export async function POST(
 
         {
           error:
-            'Mobile number must be exactly 10 digits'
+            "Mobile number must be exactly 10 digits"
+        },
+
+        {
+          status: 400
+        }
+
+      );
+
+    }
+
+    if (
+      email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email
+      )
+    ) {
+
+      return NextResponse.json(
+
+        {
+          error:
+            "Invalid email address"
         },
 
         {
@@ -79,10 +168,51 @@ export async function POST(
       const visitorCode =
         generateVisitorCode();
 
+      const [existingVisitors] =
+        await connection.query(
+
+          `
+          SELECT id
+
+          FROM visitors
+
+          WHERE mobile_number = ?
+          AND status = 'Checked In'
+
+          LIMIT 1
+          `,
+
+          [
+            `${sanitizedCountryCode}${sanitizedMobile}`
+          ]
+
+        );
+
+      if (
+        (existingVisitors as any[])
+          .length > 0
+      ) {
+
+        return NextResponse.json(
+
+          {
+            error:
+              "Visitor is already checked in"
+          },
+
+          {
+            status: 400
+          }
+
+        );
+
+      }
+
       const [result] =
         await connection.query(
 
-          `INSERT INTO visitors (
+          `
+          INSERT INTO visitors (
 
             visitor_code,
 
@@ -108,15 +238,16 @@ export async function POST(
 
           )
 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+          `,
 
           [
 
             visitorCode,
 
-            fullName,
+            sanitizedName,
 
-            `${countryCode} ${mobileNumber}`,
+            `${sanitizedCountryCode}${sanitizedMobile}`,
 
             email || null,
 
@@ -140,13 +271,16 @@ export async function POST(
 
         {
 
+          success: true,
+
           message:
-            'Visitor registered successfully',
+            "Visitor registered successfully",
 
           visitorCode,
 
           visitorId:
-            (result as any).insertId
+            (result as any)
+              .insertId
 
         },
 
@@ -156,16 +290,20 @@ export async function POST(
 
       );
 
-    } finally {
+    }
+
+    finally {
 
       connection.release();
 
     }
 
-  } catch (error) {
+  }
+
+  catch (error) {
 
     console.error(
-      'Register visitor error:',
+      "Register visitor error:",
       error
     );
 
@@ -173,7 +311,7 @@ export async function POST(
 
       {
         error:
-          'Internal server error'
+          "Internal server error"
       },
 
       {

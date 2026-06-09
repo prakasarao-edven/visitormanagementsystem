@@ -1,12 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse
+} from "next/server";
 
-import { pool } from "@/lib/db/connection";
+import {
+  pool
+} from "@/lib/db/connection";
+
+import {
+  requireSecurity
+} from "@/lib/middleware/auth";
 
 export async function POST(
   request: NextRequest
 ) {
 
   try {
+
+    const isSecurity =
+      await requireSecurity(
+        request
+      );
+
+    if (!isSecurity) {
+
+      return NextResponse.json(
+
+        {
+          error:
+            "Unauthorized"
+        },
+
+        {
+          status: 401
+        }
+
+      );
+
+    }
 
     const {
       mobileNumber
@@ -29,6 +60,33 @@ export async function POST(
 
     }
 
+    const sanitizedMobile =
+      String(
+        mobileNumber
+      ).replace(
+        /\D/g,
+        ""
+      );
+
+    if (
+      sanitizedMobile.length < 10
+    ) {
+
+      return NextResponse.json(
+
+        {
+          error:
+            "Invalid mobile number"
+        },
+
+        {
+          status: 400
+        }
+
+      );
+
+    }
+
     const connection =
       await pool.getConnection();
 
@@ -37,18 +95,22 @@ export async function POST(
       const [rows]: any =
         await connection.query(
 
-          `SELECT *
+          `
+          SELECT *
 
-           FROM visitors
+          FROM visitors
 
-           WHERE mobile_number
-           LIKE ?
+          WHERE mobile_number
+          LIKE ?
 
-           ORDER BY id DESC
+          ORDER BY id DESC
 
-           LIMIT 1`,
+          LIMIT 1
+          `,
 
-          [`%${mobileNumber}`]
+          [
+            `%${sanitizedMobile}`
+          ]
 
         );
 
@@ -74,15 +136,22 @@ export async function POST(
 
       );
 
-    } finally {
+    }
+
+    finally {
 
       connection.release();
 
     }
 
-  } catch (error) {
+  }
 
-    console.log(error);
+  catch (error) {
+
+    console.log(
+      "Find visitor error:",
+      error
+    );
 
     return NextResponse.json(
 

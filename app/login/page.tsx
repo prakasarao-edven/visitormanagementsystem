@@ -1,193 +1,245 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const router =
+    useRouter();
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
   const handleLogin = async () => {
 
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        email,
-        password
-      })
-    });
+    if (!email || !password) {
 
-    const data = await response.json();
+      alert(
+        "Email and password are required"
+      );
 
-    if (data.token) {
-      localStorage.setItem("token", data.token);
+      return;
 
-localStorage.setItem(
-  "user",
-  JSON.stringify(data.user)
-);
-
-window.location.href = "/dashboard";
-    } else {
-      alert(data.error);
     }
+
+    try {
+
+      setLoading(true);
+
+      const response =
+        await fetch(
+          "/api/auth/login",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              email,
+
+              password
+
+            })
+
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+
+        alert(
+          data.error
+        );
+
+        return;
+
+      }
+
+      document.cookie =
+        `user=${JSON.stringify(data.user)}; path=/`;
+
+      if (
+        data.user.role ===
+        "ADMIN"
+      ) {
+
+        router.push(
+          "/admin"
+        );
+
+      }
+
+      else if (
+
+        data.user.role ===
+        "SECURITY"
+
+      ) {
+
+        router.push(
+          "/dashboard"
+        );
+
+      }
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert(
+        "Something went wrong"
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
   };
 
   return (
 
     <div
       style={{
-        height: "100vh",
-        width: "100%",
+        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         background:
-          "linear-gradient(135deg, #dbeafe 0%, #eff6ff 40%, #f8fafc 100%)",
-        fontFamily: "Arial, sans-serif"
+          "linear-gradient(135deg, #dbeafe, #f8fafc)",
+        padding: "20px",
+        fontFamily:
+          "Arial, sans-serif"
       }}
     >
 
       <div
         style={{
-          width: "430px",
-          background: "#ffffff",
-          borderRadius: "28px",
-          padding: "50px",
-          border: "1px solid #dbe4f0",
+          width: "420px",
+          background: "white",
+          padding: "42px",
+          borderRadius: "24px",
           boxShadow:
-            "0 20px 45px rgba(15,23,42,0.12)",
-          backdropFilter: "blur(10px)"
+            "0 20px 45px rgba(0,0,0,0.08)",
+          border:
+            "1px solid #dbe4f0"
         }}
       >
 
         <h1
           style={{
-            textAlign: "center",
-            color: "#0f172a",
-            fontSize: "38px",
+            fontSize: "42px",
             fontWeight: "800",
-            marginBottom: "18px",
-            lineHeight: "48px"
+            color: "#0f172a",
+            textAlign: "center",
+            marginBottom: "10px"
           }}
         >
-          Visitor Management System
+          VisitorOS
         </h1>
 
         <p
           style={{
             textAlign: "center",
             color: "#64748b",
-            fontSize: "18px",
-            marginBottom: "42px",
-            lineHeight: "28px"
+            marginBottom: "36px",
+            fontSize: "16px"
           }}
         >
-          Secure access for administrators and security staff
+          Secure Access Portal
         </p>
 
-        <div style={{ marginBottom: "24px" }}>
+        <input
+          type="email"
+          placeholder="Email Address"
+          value={email}
+          onChange={(e) =>
+            setEmail(e.target.value)
+          }
+          style={inputStyle}
+        />
 
-          <label
-            style={{
-              display: "block",
-              marginBottom: "10px",
-              color: "#1e293b",
-              fontSize: "17px",
-              fontWeight: "600"
-            }}
-          >
-            Email Address
-          </label>
-
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "18px",
-              borderRadius: "14px",
-              border: "1px solid #cbd5e1",
-              fontSize: "17px",
-              outline: "none",
-              boxSizing: "border-box",
-              background: "#f8fafc"
-            }}
-          />
-
-        </div>
-
-        <div style={{ marginBottom: "34px" }}>
-
-          <label
-            style={{
-              display: "block",
-              marginBottom: "10px",
-              color: "#1e293b",
-              fontSize: "17px",
-              fontWeight: "600"
-            }}
-          >
-            Password
-          </label>
-
-          <input
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "18px",
-              borderRadius: "14px",
-              border: "1px solid #cbd5e1",
-              fontSize: "17px",
-              outline: "none",
-              boxSizing: "border-box",
-              background: "#f8fafc"
-            }}
-          />
-
-        </div>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) =>
+            setPassword(e.target.value)
+          }
+          style={inputStyle}
+        />
 
         <button
           onClick={handleLogin}
+          disabled={loading}
           style={{
             width: "100%",
-            padding: "18px",
+            padding: "16px",
             border: "none",
             borderRadius: "14px",
             background:
-              "linear-gradient(135deg, #2563eb, #1d4ed8)",
+              "#2563eb",
             color: "white",
-            fontSize: "19px",
+            fontSize: "17px",
             fontWeight: "700",
             cursor: "pointer",
-            boxShadow:
-              "0 8px 20px rgba(37,99,235,0.35)"
+            marginTop: "8px"
           }}
         >
-          Login
-        </button>
 
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "28px",
-            color: "#94a3b8",
-            fontSize: "15px"
-          }}
-        >
-          Visitor Security & Access Control Portal
-        </p>
+          {
+
+            loading
+
+            ? "Signing In..."
+
+            : "Login"
+
+          }
+
+        </button>
 
       </div>
 
     </div>
+
   );
+
 }
+
+const inputStyle = {
+
+  width: "100%",
+
+  padding: "16px",
+
+  marginBottom: "18px",
+
+  borderRadius: "14px",
+
+  border: "1px solid #cbd5e1",
+
+  background: "#f8fafc",
+
+  fontSize: "16px",
+
+  outline: "none",
+
+  boxSizing:
+    "border-box" as const
+
+};

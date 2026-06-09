@@ -1,12 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse
+} from "next/server";
 
-import { pool } from "@/lib/db/connection";
+import {
+  pool
+} from "@/lib/db/connection";
+
+import {
+  requireSecurity
+} from "@/lib/middleware/auth";
 
 export async function PUT(
   request: NextRequest
 ) {
 
   try {
+
+    const isSecurity =
+      await requireSecurity(
+        request
+      );
+
+    if (!isSecurity) {
+
+      return NextResponse.json(
+        {
+          error:
+            "Unauthorized"
+        },
+        {
+          status: 401
+        }
+      );
+
+    }
 
     const {
 
@@ -41,15 +69,47 @@ export async function PUT(
 
     try {
 
+      const [existingVisitor] =
+        await connection.query(
+
+          `
+          SELECT *
+          FROM visitors
+          WHERE id = ?
+          `,
+
+          [visitorId]
+
+        );
+
+      const visitor =
+        (existingVisitor as any[])[0];
+
+      if (!visitor) {
+
+        return NextResponse.json(
+          {
+            error:
+              "Visitor not found"
+          },
+          {
+            status: 404
+          }
+        );
+
+      }
+
       await connection.query(
 
-        `UPDATE visitors
+        `
+        UPDATE visitors
 
-         SET
-           check_out_time = ?,
-           status = 'Checked Out'
+        SET
+          check_out_time = ?,
+          status = 'Checked Out'
 
-         WHERE id = ?`,
+        WHERE id = ?
+        `,
 
         [
           checkOutTime,
@@ -61,21 +121,32 @@ export async function PUT(
       return NextResponse.json(
 
         {
+
+          success: true,
+
           message:
             "Checkout time updated successfully"
+
         }
 
       );
 
-    } finally {
+    }
+
+    finally {
 
       connection.release();
 
     }
 
-  } catch (error) {
+  }
 
-    console.log(error);
+  catch (error) {
+
+    console.log(
+      "Update checkout error:",
+      error
+    );
 
     return NextResponse.json(
 
@@ -93,3 +164,4 @@ export async function PUT(
   }
 
 }
+
