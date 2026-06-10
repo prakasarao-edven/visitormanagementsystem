@@ -48,21 +48,49 @@ export default function AdminPage() {
 
       const response =
         await fetch(
-          "/api/visitors/list"
+          "/api/visitors/list",
+          {
+            credentials:
+              "include"
+          }
         );
+
+      if (!response.ok) {
+
+        if (
+          response.status === 401
+        ) {
+
+          window.location.href =
+            "/login";
+
+          return;
+
+        }
+
+      }
 
       const data =
         await response.json();
 
       setVisitors(
-        data.visitors || []
+        Array.isArray(
+          data.visitors
+        )
+          ? data.visitors
+          : []
       );
 
     }
 
     catch (error) {
 
-      console.log(error);
+      console.error(
+        "Fetch visitors error:",
+        error
+      );
+
+      setVisitors([]);
 
     }
 
@@ -84,7 +112,7 @@ export default function AdminPage() {
   };
 
   const filteredVisitors =
-    visitors.filter(
+    (visitors || []).filter(
       (visitor: any) => {
 
         const query =
@@ -92,20 +120,25 @@ export default function AdminPage() {
 
         const visitorDate =
           visitor.check_in_time
-          ? new Date(
-              visitor.check_in_time
-            )
-              .toISOString()
-              .split("T")[0]
-          : "";
+
+            ? new Date(
+                visitor.check_in_time
+              ).toLocaleDateString(
+                "en-GB"
+              )
+
+            : "";
 
         const matchesDate =
           !selectedDate ||
+
           visitorDate ===
             selectedDate;
 
         if (!query) {
+
           return matchesDate;
+
         }
 
         let matchesSearch =
@@ -208,7 +241,9 @@ export default function AdminPage() {
         if (
           !visitor.check_in_time
         ) {
+
           return false;
+
         }
 
         return (
@@ -480,14 +515,10 @@ export default function AdminPage() {
                       )
                     }
                     style={
-
                       activeSection ===
                       "details"
-
                       ? sidebarActive
-
                       : sidebarButton
-
                     }
                   >
                     Visitor Details
@@ -501,14 +532,10 @@ export default function AdminPage() {
                       )
                     }
                     style={
-
                       activeSection ===
                       "reports"
-
                       ? sidebarActive
-
                       : sidebarButton
-
                     }
                   >
                     Reports
@@ -522,14 +549,10 @@ export default function AdminPage() {
                       )
                     }
                     style={
-
                       activeSection ===
                       "analytics"
-
                       ? sidebarActive
-
                       : sidebarButton
-
                     }
                   >
                     Analytics
@@ -540,9 +563,14 @@ export default function AdminPage() {
               </div>
 
               <button
-                onClick={() => {
+                onClick={async () => {
 
-                  localStorage.clear();
+                  await fetch(
+                    "/api/auth/logout",
+                    {
+                      method: "POST"
+                    }
+                  );
 
                   window.location.href =
                     "/login";
@@ -593,13 +621,11 @@ export default function AdminPage() {
 
             <select
               value={filterType}
-
               onChange={(e) =>
                 setFilterType(
                   e.target.value
                 )
               }
-
               style={filterInput}
             >
 
@@ -627,59 +653,50 @@ export default function AdminPage() {
 
             <input
               type="text"
-
               placeholder={`Search ${filterType}`}
-
               value={search}
-
               onChange={(e) =>
                 setSearch(
                   e.target.value
                 )
               }
-
               style={searchInput}
             />
 
             <input
-  type="text"
+              type="text"
+              placeholder="DD/MM/YYYY"
+              value={selectedDate}
+              onChange={(e) => {
 
-  placeholder="DD/MM/YYYY"
+                let value =
+                  e.target.value
+                    .replace(/\D/g, "");
 
-  value={selectedDate}
+                if (value.length >= 3) {
 
-  onChange={(e) => {
+                  value =
+                    value.slice(0, 2) +
+                    "/" +
+                    value.slice(2);
 
-    let value =
-      e.target.value
-        .replace(/\D/g, "");
+                }
 
-    if (value.length >= 3) {
+                if (value.length >= 6) {
 
-      value =
-        value.slice(0, 2) +
-        "/" +
-        value.slice(2);
+                  value =
+                    value.slice(0, 5) +
+                    "/" +
+                    value.slice(5, 9);
 
-    }
+                }
 
-    if (value.length >= 6) {
+                setSelectedDate(value);
 
-      value =
-        value.slice(0, 5) +
-        "/" +
-        value.slice(5, 9);
-
-    }
-
-    setSelectedDate(value);
-
-  }}
-
-  maxLength={10}
-
-  style={filterInput}
-/>
+              }}
+              maxLength={10}
+              style={filterInput}
+            />
 
           </div>
 
@@ -750,137 +767,138 @@ export default function AdminPage() {
                   filteredVisitors.map(
                     (visitor: any) => (
 
-                    <tr
-                      key={visitor.id}
-                    >
+                      <tr
+                        key={visitor.id}
+                      >
 
-                      <td style={tableCell}>
-                        {
-                          visitor.visitor_code
-                        }
-                      </td>
+                        <td style={tableCell}>
+                          {
+                            visitor.visitor_code
+                          }
+                        </td>
 
-                      <td style={tableCell}>
-                        {
-                          visitor.full_name
-                        }
-                      </td>
+                        <td style={tableCell}>
+                          {
+                            visitor.full_name
+                          }
+                        </td>
 
-                      <td style={tableCell}>
-                        {
-                          visitor.mobile_number
-                        }
-                      </td>
+                        <td style={tableCell}>
+                          {
+                            visitor.mobile_number
+                          }
+                        </td>
 
-                      <td style={tableCell}>
-                        {
-                          visitor.purpose_of_visit
-                        }
-                      </td>
+                        <td style={tableCell}>
+                          {
+                            visitor.purpose_of_visit
+                          }
+                        </td>
 
-                      <td style={tableCell}>
-                        {
-                          visitor.person_to_meet
-                        }
-                      </td>
+                        <td style={tableCell}>
+                          {
+                            visitor.person_to_meet
+                          }
+                        </td>
 
-                      <td style={tableCell}>
+                        <td style={tableCell}>
 
-                        <span
-                          style={{
+                          <span
+                            style={{
 
-                            background:
+                              background:
 
-                              visitor.status ===
-                              "Checked In"
+                                visitor.status ===
+                                "Checked In"
 
-                              ? "#dcfce7"
+                                ? "#dcfce7"
 
-                              : "#fee2e2",
+                                : "#fee2e2",
 
-                            color:
+                              color:
 
-                              visitor.status ===
-                              "Checked In"
+                                visitor.status ===
+                                "Checked In"
 
-                              ? "#166534"
+                                ? "#166534"
 
-                              : "#991b1b",
+                                : "#991b1b",
 
-                            padding:
-                              "8px 12px",
+                              padding:
+                                "8px 12px",
 
-                            borderRadius:
-                              "999px",
+                              borderRadius:
+                                "999px",
 
-                            fontSize: "12px",
+                              fontSize: "12px",
 
-                            fontWeight: "700"
+                              fontWeight: "700"
 
-                          }}
-                        >
+                            }}
+                          >
+
+                            {
+                              visitor.status
+                            }
+
+                          </span>
+
+                        </td>
+
+                        <td style={tableCell}>
 
                           {
-                            visitor.status
+
+                            visitor.check_in_time
+
+                            ? new Date(
+                                visitor.check_in_time
+                              ).toLocaleString(
+                                "en-IN",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                }
+                              )
+
+                            : "-"
+
                           }
 
-                        </span>
+                        </td>
 
-                      </td>
+                        <td style={tableCell}>
 
-                      <td style={tableCell}>
+                          {
 
-                        {
+                            visitor.check_out_time
 
-                          visitor.check_in_time
+                            ? new Date(
+                                visitor.check_out_time
+                              ).toLocaleString(
+                                "en-IN",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                }
+                              )
 
-                          ? new Date(
-                              visitor.check_in_time
-                            ).toLocaleString(
-                              "en-IN",
-                               {
-                                 day: "2-digit",
-                                 month: "2-digit",
-                                 year: "numeric",
-                                 hour: "2-digit",
-                                 minute: "2-digit"
-                             }
-)
+                            : "-"
 
-                          : "-"
+                          }
 
-                        }
+                        </td>
 
-                      </td>
+                      </tr>
 
-                      <td style={tableCell}>
-
-                        {
-
-                          visitor.check_out_time
-
-                          ? new Date(
-                              visitor.check_out_time
-                            ).toLocaleString(
-  "en-IN",
-  {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  }
-)
-
-                          : "-"
-
-                        }
-
-                      </td>
-
-                    </tr>
-
-                  ))
+                    )
+                  )
 
                 }
 
@@ -1249,10 +1267,7 @@ const sidebarButton = {
 
   textAlign: "left" as const,
 
-  width: "100%",
-
-  transition:
-    "0.2s ease"
+  width: "100%"
 };
 
 const sidebarActive = {

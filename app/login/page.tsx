@@ -1,12 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-
-  const router =
-    useRouter();
 
   const [email, setEmail] =
     useState("");
@@ -37,11 +33,17 @@ export default function LoginPage() {
         await fetch(
           "/api/auth/login",
           {
+
             method: "POST",
 
+            credentials:
+              "include",
+
             headers: {
+
               "Content-Type":
                 "application/json"
+
             },
 
             body: JSON.stringify({
@@ -58,52 +60,74 @@ export default function LoginPage() {
       const data =
         await response.json();
 
+      console.log(
+        "LOGIN RESPONSE:",
+        data
+      );
+
       if (!response.ok) {
 
         alert(
-          data.error
+          data.error ||
+          "Login failed"
         );
 
         return;
 
       }
 
-      document.cookie =
-        `user=${JSON.stringify(data.user)}; path=/`;
+      const role =
+        data?.user?.role;
+
+      console.log(
+        "ROLE:",
+        role
+      );
 
       if (
-        data.user.role ===
-        "ADMIN"
+        role === "ADMIN"
       ) {
 
-        router.push(
+        window.location.replace(
           "/admin"
         );
 
+        return;
+
       }
 
-      else if (
-
-        data.user.role ===
-        "SECURITY"
-
+      if (
+        role === "SECURITY"
       ) {
 
-        router.push(
+        window.location.replace(
           "/dashboard"
         );
 
+        return;
+
       }
 
-    } catch (error) {
+      alert(
+        "Invalid role assigned"
+      );
 
-      console.log(error);
+    }
+
+    catch (error) {
+
+      console.log(
+        "LOGIN ERROR:",
+        error
+      );
 
       alert(
         "Something went wrong"
       );
 
-    } finally {
+    }
+
+    finally {
 
       setLoading(false);
 
@@ -168,7 +192,9 @@ export default function LoginPage() {
           placeholder="Email Address"
           value={email}
           onChange={(e) =>
-            setEmail(e.target.value)
+            setEmail(
+              e.target.value
+            )
           }
           style={inputStyle}
         />
@@ -178,7 +204,9 @@ export default function LoginPage() {
           placeholder="Password"
           value={password}
           onChange={(e) =>
-            setPassword(e.target.value)
+            setPassword(
+              e.target.value
+            )
           }
           style={inputStyle}
         />
@@ -192,12 +220,19 @@ export default function LoginPage() {
             border: "none",
             borderRadius: "14px",
             background:
-              "#2563eb",
+              loading
+                ? "#93c5fd"
+                : "#2563eb",
             color: "white",
             fontSize: "17px",
             fontWeight: "700",
-            cursor: "pointer",
-            marginTop: "8px"
+            cursor:
+              loading
+                ? "not-allowed"
+                : "pointer",
+            marginTop: "8px",
+            transition:
+              "0.2s ease"
           }}
         >
 
@@ -231,7 +266,8 @@ const inputStyle = {
 
   borderRadius: "14px",
 
-  border: "1px solid #cbd5e1",
+  border:
+    "1px solid #cbd5e1",
 
   background: "#f8fafc",
 

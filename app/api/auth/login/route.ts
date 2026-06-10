@@ -29,13 +29,16 @@ export async function POST(
     ) {
 
       return NextResponse.json(
+
         {
           error:
             "Email and password are required"
         },
+
         {
           status: 400
         }
+
       );
 
     }
@@ -60,13 +63,16 @@ export async function POST(
       if (!user) {
 
         return NextResponse.json(
+
           {
             error:
               "Invalid credentials"
           },
+
           {
             status: 401
           }
+
         );
 
       }
@@ -83,13 +89,16 @@ export async function POST(
       if (!passwordMatch) {
 
         return NextResponse.json(
+
           {
             error:
               "Invalid credentials"
           },
+
           {
             status: 401
           }
+
         );
 
       }
@@ -97,13 +106,16 @@ export async function POST(
       if (!user.status) {
 
         return NextResponse.json(
+
           {
             error:
               "User account is disabled"
           },
+
           {
             status: 403
           }
+
         );
 
       }
@@ -123,16 +135,12 @@ export async function POST(
 
           },
 
-          process.env.JWT_SECRET ||
-
-          "secret",
+          process.env.JWT_SECRET,
 
           {
 
             expiresIn:
-
               process.env.JWT_EXPIRY ||
-
               "24h"
 
           }
@@ -176,11 +184,9 @@ export async function POST(
 
           httpOnly: true,
 
-          secure:
-            process.env.NODE_ENV ===
-            "production",
+          secure: false,
 
-          sameSite: "strict",
+          sameSite: "lax",
 
           path: "/",
 
@@ -211,13 +217,16 @@ export async function POST(
     );
 
     return NextResponse.json(
+
       {
         error:
           "Internal server error"
       },
+
       {
         status: 500
       }
+
     );
 
   }

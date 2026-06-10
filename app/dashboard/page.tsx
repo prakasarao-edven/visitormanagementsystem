@@ -57,15 +57,47 @@ export default function DashboardPage() {
     try {
 
       const response =
-        await fetch(
-          "/api/visitors/list"
-        );
+      await fetch(
+  "/api/visitors/list",
+  {
+    credentials: "include"
+  }
+);
 
-      const data =
+      
+        const data =
         await response.json();
 
-      setVisitors(data.visitors);
+      console.log(
+  "VISITORS API RESPONSE:",
+  data
+);
 
+console.log(
+  "STATUS:",
+  response.status
+);
+  
+
+        if (
+  response.ok &&
+  Array.isArray(data.visitors)
+) {
+
+  setVisitors(data.visitors);
+
+}
+
+else {
+
+  console.log(
+    "Visitors API Error:",
+    data
+  );
+
+  setVisitors([]);
+
+}
     } catch (error) {
 
       console.log(error);

@@ -17,7 +17,16 @@ export async function verifyAuth(
         "token"
       )?.value;
 
+    console.log(
+      "TOKEN:",
+      token
+    );
+
     if (!token) {
+
+      console.log(
+        "NO TOKEN FOUND"
+      );
 
       return null;
 
@@ -37,11 +46,21 @@ export async function verifyAuth(
       secret
     );
 
+    console.log(
+      "PAYLOAD:",
+      payload
+    );
+
     return payload;
 
   }
 
-  catch {
+  catch (error) {
+
+    console.log(
+      "AUTH ERROR:",
+      error
+    );
 
     return null;
 
@@ -59,8 +78,12 @@ export async function requireAdmin(
     );
 
   if (
+
     !payload ||
-    payload.role !== "ADMIN"
+
+    payload.role !==
+    "ADMIN"
+
   ) {
 
     return false;
@@ -81,8 +104,12 @@ export async function requireSecurity(
     );
 
   if (
+
     !payload ||
-    payload.role !== "SECURITY"
+
+    payload.role !==
+    "SECURITY"
+
   ) {
 
     return false;

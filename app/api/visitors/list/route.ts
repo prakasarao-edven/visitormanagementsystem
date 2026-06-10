@@ -8,7 +8,7 @@ import {
 } from "@/lib/db/connection";
 
 import {
-  requireAdmin
+  verifyAuth
 } from "@/lib/middleware/auth";
 
 export async function GET(
@@ -17,21 +17,24 @@ export async function GET(
 
   try {
 
-    const isAdmin =
-      await requireAdmin(
+    const user =
+      await verifyAuth(
         request
       );
 
-    if (!isAdmin) {
+    if (!user) {
 
       return NextResponse.json(
+
         {
           error:
             "Unauthorized"
         },
+
         {
           status: 401
         }
+
       );
 
     }
@@ -46,13 +49,20 @@ export async function GET(
 
           `
           SELECT *
+
           FROM visitors
+
           ORDER BY created_at DESC
           `
 
         );
 
-      return NextResponse.json({
+      console.log(
+  "DATABASE ROWS:",
+  rows
+);
+
+        return NextResponse.json({
 
         visitors: rows
 

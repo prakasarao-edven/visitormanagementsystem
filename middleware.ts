@@ -3,34 +3,36 @@ import {
   NextResponse
 } from "next/server";
 
-import {
-  jwtVerify
-} from "jose";
+import jwt from "jsonwebtoken";
 
-export async function middleware(
+export function middleware(
   request: NextRequest
 ) {
-
-  console.log(
-    "MIDDLEWARE RUNNING"
-  );
 
   const pathname =
     request.nextUrl.pathname;
 
   const token =
-    request.cookies.get("token")
-      ?.value;
+    request.cookies.get(
+      "token"
+    )?.value;
 
   if (
 
-    pathname === "/login" ||
-
     pathname.startsWith(
       "/_next"
-    ) ||
+    )
+
+    ||
 
     pathname.includes(".")
+
+    ||
+
+    pathname.startsWith(
+      "/api/auth"
+    )
+
   ) {
 
     return NextResponse.next();
@@ -39,52 +41,64 @@ export async function middleware(
 
   if (!token) {
 
+    if (
+      pathname === "/login"
+    ) {
+
+      return NextResponse.next();
+
+    }
+
     return NextResponse.redirect(
+
       new URL(
         "/login",
         request.url
       )
+
     );
 
   }
 
   try {
 
-    const secret =
-      new TextEncoder().encode(
+    const decoded: any =
+      jwt.verify(
 
-        process.env.JWT_SECRET ||
+        token,
 
-        "secret"
+        process.env.JWT_SECRET!
 
       );
 
-    const {
-      payload
-    } = await jwtVerify(
-      token,
-      secret
+    console.log(
+      "ROLE:",
+      decoded.role
     );
-
-    const role =
-      payload.role;
 
     if (
 
       pathname.startsWith(
         "/admin"
-      ) &&
-
-      role !== "ADMIN"
+      )
 
     ) {
 
-      return NextResponse.redirect(
-        new URL(
-          "/dashboard",
-          request.url
-        )
-      );
+      if (
+        decoded.role !==
+        "ADMIN"
+      ) {
+
+        return NextResponse.redirect(
+
+          new URL(
+            "/login",
+            request.url
+          )
+
+        );
+
+      }
 
     }
 
@@ -92,18 +106,25 @@ export async function middleware(
 
       pathname.startsWith(
         "/dashboard"
-      ) &&
-
-      role !== "SECURITY"
+      )
 
     ) {
 
-      return NextResponse.redirect(
-        new URL(
-          "/admin",
-          request.url
-        )
-      );
+      if (
+        decoded.role !==
+        "SECURITY"
+      ) {
+
+        return NextResponse.redirect(
+
+          new URL(
+            "/login",
+            request.url
+          )
+
+        );
+
+      }
 
     }
 
@@ -114,14 +135,17 @@ export async function middleware(
   catch (error) {
 
     console.log(
-      "TOKEN ERROR"
+      "JWT ERROR:",
+      error
     );
 
     return NextResponse.redirect(
+
       new URL(
         "/login",
         request.url
       )
+
     );
 
   }
