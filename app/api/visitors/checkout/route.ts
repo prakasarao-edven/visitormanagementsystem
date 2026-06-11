@@ -11,7 +11,7 @@ import {
   requireSecurity
 } from "@/lib/middleware/auth";
 
-export async function GET(
+export async function PUT(
   request: NextRequest
 ) {
 
@@ -25,66 +25,31 @@ export async function GET(
     if (!isSecurity) {
 
       return NextResponse.json(
-
         {
           error:
             "Unauthorized"
         },
-
         {
           status: 401
         }
-
       );
 
     }
 
-    const searchParams =
-      request.nextUrl.searchParams;
+    const {
+      visitorId
+    } = await request.json();
 
-    const mobileNumber =
-      searchParams.get(
-        "mobileNumber"
-      );
-
-    if (!mobileNumber) {
+    if (!visitorId) {
 
       return NextResponse.json(
-
         {
           error:
-            "Mobile number is required"
+            "Visitor ID is required"
         },
-
         {
           status: 400
         }
-
-      );
-
-    }
-
-    const sanitizedMobile =
-      mobileNumber.replace(
-        /\D/g,
-        ""
-      );
-
-    if (
-      sanitizedMobile.length < 10
-    ) {
-
-      return NextResponse.json(
-
-        {
-          error:
-            "Invalid mobile number"
-        },
-
-        {
-          status: 400
-        }
-
       );
 
     }
@@ -94,44 +59,77 @@ export async function GET(
 
     try {
 
-      const [visitors] =
+      const [existingVisitor] =
         await connection.query(
 
           `
           SELECT *
-
           FROM visitors
-
-          WHERE mobile_number = ?
+          WHERE id = ?
           `,
 
-          [sanitizedMobile]
+          [visitorId]
 
         );
 
       const visitor =
-        (visitors as any[])[0];
+        (existingVisitor as any[])[0];
 
       if (!visitor) {
 
         return NextResponse.json(
-
           {
             error:
               "Visitor not found"
           },
-
           {
             status: 404
           }
-
         );
 
       }
 
+      if (
+
+        visitor.status ===
+        "Checked Out"
+
+      ) {
+
+        return NextResponse.json(
+          {
+            error:
+              "Visitor already checked out"
+          },
+          {
+            status: 400
+          }
+        );
+
+      }
+
+      await connection.query(
+
+        `
+        UPDATE visitors
+
+        SET
+          status = 'Checked Out',
+          check_out_time = NOW()
+
+        WHERE id = ?
+        `,
+
+        [visitorId]
+
+      );
+
       return NextResponse.json({
 
-        visitor
+        success: true,
+
+        message:
+          "Visitor checked out successfully"
 
       });
 
@@ -148,7 +146,7 @@ export async function GET(
   catch (error) {
 
     console.error(
-      "Search visitor error:",
+      "Checkout error:",
       error
     );
 

@@ -11,7 +11,7 @@ import {
   requireSecurity
 } from "@/lib/middleware/auth";
 
-export async function GET(
+export async function PUT(
   request: NextRequest
 ) {
 
@@ -39,46 +39,17 @@ export async function GET(
 
     }
 
-    const searchParams =
-      request.nextUrl.searchParams;
+    const {
+      visitorId
+    } = await request.json();
 
-    const mobileNumber =
-      searchParams.get(
-        "mobileNumber"
-      );
-
-    if (!mobileNumber) {
+    if (!visitorId) {
 
       return NextResponse.json(
 
         {
           error:
-            "Mobile number is required"
-        },
-
-        {
-          status: 400
-        }
-
-      );
-
-    }
-
-    const sanitizedMobile =
-      mobileNumber.replace(
-        /\D/g,
-        ""
-      );
-
-    if (
-      sanitizedMobile.length < 10
-    ) {
-
-      return NextResponse.json(
-
-        {
-          error:
-            "Invalid mobile number"
+            "Visitor ID is required"
         },
 
         {
@@ -94,7 +65,7 @@ export async function GET(
 
     try {
 
-      const [visitors] =
+      const [existingVisitor] =
         await connection.query(
 
           `
@@ -102,15 +73,15 @@ export async function GET(
 
           FROM visitors
 
-          WHERE mobile_number = ?
+          WHERE id = ?
           `,
 
-          [sanitizedMobile]
+          [visitorId]
 
         );
 
       const visitor =
-        (visitors as any[])[0];
+        (existingVisitor as any[])[0];
 
       if (!visitor) {
 
@@ -129,9 +100,50 @@ export async function GET(
 
       }
 
+      if (
+
+        visitor.status ===
+        "Checked In"
+
+      ) {
+
+        return NextResponse.json(
+
+          {
+            error:
+              "Visitor already checked in"
+          },
+
+          {
+            status: 400
+          }
+
+        );
+
+      }
+
+      await connection.query(
+
+        `
+        UPDATE visitors
+
+        SET
+          status = 'Checked In',
+          check_in_time = NOW()
+
+        WHERE id = ?
+        `,
+
+        [visitorId]
+
+      );
+
       return NextResponse.json({
 
-        visitor
+        success: true,
+
+        message:
+          "Visitor checked in successfully"
 
       });
 
@@ -148,7 +160,7 @@ export async function GET(
   catch (error) {
 
     console.error(
-      "Search visitor error:",
+      "Check in error:",
       error
     );
 

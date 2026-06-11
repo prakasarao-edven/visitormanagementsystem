@@ -11,7 +11,7 @@ import {
   requireSecurity
 } from "@/lib/middleware/auth";
 
-export async function GET(
+export async function PUT(
   request: NextRequest
 ) {
 
@@ -25,60 +25,35 @@ export async function GET(
     if (!isSecurity) {
 
       return NextResponse.json(
-
         {
           error:
             "Unauthorized"
         },
-
         {
           status: 401
         }
-
       );
 
     }
 
-    const searchParams =
-      request.nextUrl.searchParams;
+    const {
 
-    const mobileNumber =
-      searchParams.get(
-        "mobileNumber"
-      );
+      visitorId,
 
-    if (!mobileNumber) {
+      checkOutTime
 
-      return NextResponse.json(
-
-        {
-          error:
-            "Mobile number is required"
-        },
-
-        {
-          status: 400
-        }
-
-      );
-
-    }
-
-    const sanitizedMobile =
-      mobileNumber.replace(
-        /\D/g,
-        ""
-      );
+    } = await request.json();
 
     if (
-      sanitizedMobile.length < 10
+      !visitorId ||
+      !checkOutTime
     ) {
 
       return NextResponse.json(
 
         {
           error:
-            "Invalid mobile number"
+            "Visitor ID and checkout time are required"
         },
 
         {
@@ -94,46 +69,67 @@ export async function GET(
 
     try {
 
-      const [visitors] =
+      const [existingVisitor] =
         await connection.query(
 
           `
           SELECT *
-
           FROM visitors
-
-          WHERE mobile_number = ?
+          WHERE id = ?
           `,
 
-          [sanitizedMobile]
+          [visitorId]
 
         );
 
       const visitor =
-        (visitors as any[])[0];
+        (existingVisitor as any[])[0];
 
       if (!visitor) {
 
         return NextResponse.json(
-
           {
             error:
               "Visitor not found"
           },
-
           {
             status: 404
           }
-
         );
 
       }
 
-      return NextResponse.json({
+      await connection.query(
 
-        visitor
+        `
+        UPDATE visitors
 
-      });
+        SET
+          check_out_time = ?,
+          status = 'Checked Out'
+
+        WHERE id = ?
+        `,
+
+        [
+          checkOutTime,
+          visitorId
+        ]
+
+      );
+
+      return NextResponse.json(
+
+        {
+
+          success: true,
+
+          message:
+            "Checkout time updated successfully"
+
+        }
+
+      );
 
     }
 
@@ -147,8 +143,8 @@ export async function GET(
 
   catch (error) {
 
-    console.error(
-      "Search visitor error:",
+    console.log(
+      "Update checkout error:",
       error
     );
 
@@ -168,3 +164,4 @@ export async function GET(
   }
 
 }
+

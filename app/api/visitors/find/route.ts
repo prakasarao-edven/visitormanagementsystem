@@ -11,7 +11,7 @@ import {
   requireSecurity
 } from "@/lib/middleware/auth";
 
-export async function GET(
+export async function POST(
   request: NextRequest
 ) {
 
@@ -39,13 +39,9 @@ export async function GET(
 
     }
 
-    const searchParams =
-      request.nextUrl.searchParams;
-
-    const mobileNumber =
-      searchParams.get(
-        "mobileNumber"
-      );
+    const {
+      mobileNumber
+    } = await request.json();
 
     if (!mobileNumber) {
 
@@ -65,7 +61,9 @@ export async function GET(
     }
 
     const sanitizedMobile =
-      mobileNumber.replace(
+      String(
+        mobileNumber
+      ).replace(
         /\D/g,
         ""
       );
@@ -94,7 +92,7 @@ export async function GET(
 
     try {
 
-      const [visitors] =
+      const [rows]: any =
         await connection.query(
 
           `
@@ -102,38 +100,41 @@ export async function GET(
 
           FROM visitors
 
-          WHERE mobile_number = ?
+          WHERE mobile_number
+          LIKE ?
+
+          ORDER BY id DESC
+
+          LIMIT 1
           `,
 
-          [sanitizedMobile]
+          [
+            `%${sanitizedMobile}`
+          ]
 
         );
 
-      const visitor =
-        (visitors as any[])[0];
-
-      if (!visitor) {
+      if (
+        rows.length === 0
+      ) {
 
         return NextResponse.json(
 
           {
-            error:
-              "Visitor not found"
-          },
-
-          {
-            status: 404
+            visitor: null
           }
 
         );
 
       }
 
-      return NextResponse.json({
+      return NextResponse.json(
 
-        visitor
+        {
+          visitor: rows[0]
+        }
 
-      });
+      );
 
     }
 
@@ -147,8 +148,8 @@ export async function GET(
 
   catch (error) {
 
-    console.error(
-      "Search visitor error:",
+    console.log(
+      "Find visitor error:",
       error
     );
 
