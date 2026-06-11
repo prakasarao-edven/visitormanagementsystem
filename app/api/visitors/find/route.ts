@@ -7,37 +7,11 @@ import {
   pool
 } from "@/lib/db/connection";
 
-import {
-  requireSecurity
-} from "@/lib/middleware/auth";
-
 export async function POST(
   request: NextRequest
 ) {
 
   try {
-
-    const isSecurity =
-      await requireSecurity(
-        request
-      );
-
-    if (!isSecurity) {
-
-      return NextResponse.json(
-
-        {
-          error:
-            "Unauthorized"
-        },
-
-        {
-          status: 401
-        }
-
-      );
-
-    }
 
     const {
       mobileNumber
