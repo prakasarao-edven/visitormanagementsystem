@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+
+  const router = useRouter();
 
   const [email, setEmail] =
     useState("");
@@ -65,6 +68,11 @@ export default function LoginPage() {
         data
       );
 
+      console.log(
+        "FULL DATA:",
+        JSON.stringify(data, null, 2)
+      );
+
       if (!response.ok) {
 
         alert(
@@ -80,15 +88,28 @@ export default function LoginPage() {
         data?.user?.role;
 
       console.log(
-        "ROLE:",
+        "About to check role..."
+      );
+
+      console.log(
+        "Role value:",
         role
       );
 
       if (
+        role === "SUPER_ADMIN" ||
         role === "ADMIN"
       ) {
 
-        window.location.replace(
+        console.log(
+          "Role matched, calling router.push('/admin')"
+        );
+
+        alert(
+          "Redirecting to admin..."
+        );
+
+        router.push(
           "/admin"
         );
 
@@ -100,7 +121,7 @@ export default function LoginPage() {
         role === "SECURITY"
       ) {
 
-        window.location.replace(
+        router.push(
           "/dashboard"
         );
 

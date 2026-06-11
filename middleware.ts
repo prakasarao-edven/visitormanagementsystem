@@ -3,9 +3,9 @@ import {
   NextResponse
 } from "next/server";
 
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 
-export function middleware(
+export async function middleware(
   request: NextRequest
 ) {
 
@@ -62,18 +62,25 @@ export function middleware(
 
   try {
 
-    const decoded: any =
-      jwt.verify(
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET!
+    );
+
+    const decoded =
+      await jwtVerify(
 
         token,
 
-        process.env.JWT_SECRET!
+        secret
 
       );
 
+    const role =
+      (decoded.payload as any).role;
+
     console.log(
       "ROLE:",
-      decoded.role
+      role
     );
 
     if (
@@ -85,8 +92,10 @@ export function middleware(
     ) {
 
       if (
-        decoded.role !==
-        "ADMIN"
+        role !==
+        "ADMIN" &&
+        role !==
+        "SUPER_ADMIN"
       ) {
 
         return NextResponse.redirect(
@@ -111,7 +120,7 @@ export function middleware(
     ) {
 
       if (
-        decoded.role !==
+        role !==
         "SECURITY"
       ) {
 
