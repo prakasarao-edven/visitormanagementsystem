@@ -243,7 +243,7 @@ export default function LoginPage() {
             background:
               loading
                 ? "#93c5fd"
-                : "#2563eb",
+                : "#004B87",
             color: "white",
             fontSize: "17px",
             fontWeight: "700",

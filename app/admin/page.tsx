@@ -55,21 +55,6 @@ export default function AdminPage() {
           }
         );
 
-      if (!response.ok) {
-
-        if (
-          response.status === 401
-        ) {
-
-          window.location.href =
-            "/login";
-
-          return;
-
-        }
-
-      }
-
       const data =
         await response.json();
 
@@ -85,21 +70,16 @@ export default function AdminPage() {
 
     catch (error) {
 
-      console.error(
-        "Fetch visitors error:",
-        error
-      );
-
-      setVisitors([]);
+      console.log(error);
 
     }
 
   };
 
-  const scrollToSection = (
+  function scrollToSection(
     section: string,
     ref: any
-  ) => {
+  ) {
 
     setActiveSection(section);
 
@@ -109,82 +89,86 @@ export default function AdminPage() {
 
     setSidebarOpen(false);
 
-  };
+  }
+
+  const selectedVisitors =
+
+    selectedDate
+
+    ?
+
+    visitors.filter(
+      (visitor: any) => {
+
+        if (
+          !visitor.check_in_time
+        ) {
+
+          return false;
+
+        }
+
+        const visitorDate =
+          new Date(
+            visitor.check_in_time
+          )
+            .toISOString()
+            .split("T")[0];
+
+        return (
+          visitorDate ===
+          selectedDate
+        );
+
+      }
+    )
+
+    :
+
+    visitors;
 
   const filteredVisitors =
-    (visitors || []).filter(
+    selectedVisitors.filter(
       (visitor: any) => {
 
         const query =
           search.toLowerCase();
 
-        const visitorDate =
-          visitor.check_in_time
-
-            ? new Date(
-                visitor.check_in_time
-              ).toLocaleDateString(
-                "en-GB"
-              )
-
-            : "";
-
-        const matchesDate =
-          !selectedDate ||
-
-          visitorDate ===
-            selectedDate;
-
         if (!query) {
 
-          return matchesDate;
+          return true;
 
         }
-
-        let matchesSearch =
-          false;
 
         switch (filterType) {
 
           case "visitor":
 
-            matchesSearch =
-              visitor.full_name
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.full_name
+              ?.toLowerCase()
+              .includes(query);
 
           case "employee":
 
-            matchesSearch =
-              visitor.person_to_meet
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.person_to_meet
+              ?.toLowerCase()
+              .includes(query);
 
           case "mobile":
 
-            matchesSearch =
-              visitor.mobile_number
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.mobile_number
+              ?.toLowerCase()
+              .includes(query);
 
           case "code":
 
-            matchesSearch =
-              visitor.visitor_code
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.visitor_code
+              ?.toLowerCase()
+              .includes(query);
 
           default:
 
-            matchesSearch = (
+            return (
 
               visitor.full_name
                 ?.toLowerCase()
@@ -212,224 +196,127 @@ export default function AdminPage() {
 
         }
 
-        return (
-          matchesSearch &&
-          matchesDate
-        );
-
-      }
-    );
-
-  const checkedInVisitors =
-    visitors.filter(
-      (visitor) =>
-        visitor.status ===
-        "Checked In"
-    );
-
-  const checkedOutVisitors =
-    visitors.filter(
-      (visitor) =>
-        visitor.status ===
-        "Checked Out"
-    );
-
-  const todayVisitors =
-    visitors.filter(
-      (visitor) => {
-
-        if (
-          !visitor.check_in_time
-        ) {
-
-          return false;
-
-        }
-
-        return (
-
-          new Date(
-            visitor.check_in_time
-          ).toDateString()
-
-          ===
-
-          new Date()
-            .toDateString()
-
-        );
-
       }
     );
 
   const analytics = useMemo(() => {
 
-    const revisitMap: any = {};
-
-    const employeeMap: any = {};
-
-    const purposeMap: any = {};
-
-    const hourMap: any = {};
-
-    visitors.forEach(
-      (visitor: any) => {
-
-        const mobile =
-          visitor.mobile_number || "-";
-
-        if (
-          !revisitMap[mobile]
-        ) {
-
-          revisitMap[mobile] = {
-
-            count: 0,
-
-            name:
-              visitor.full_name || "-",
-
-            mobile
-
-          };
-
-        }
-
-        revisitMap[mobile]
-          .count += 1;
-
-        const employee =
-          visitor.person_to_meet || "-";
-
-        employeeMap[employee] =
-          (employeeMap[employee] || 0) + 1;
-
-        const purpose =
-          visitor.purpose_of_visit || "-";
-
-        purposeMap[purpose] =
-          (purposeMap[purpose] || 0) + 1;
-
-        if (
-          visitor.check_in_time
-        ) {
-
-          const hour =
-            new Date(
-              visitor.check_in_time
-            ).getHours();
-
-          hourMap[hour] =
-            (hourMap[hour] || 0) + 1;
-
-        }
-
-      }
+    const checkedInVisitors = selectedVisitors.filter(
+      (visitor: any) => visitor.status === "Checked In"
     );
 
-    const topVisitor =
-      Object.values(
-        revisitMap
-      ).sort(
-        (a: any, b: any) =>
-          b.count - a.count
-      )[0] as any;
+    // Get frequently visited employee
+    const employeeCount: any = {};
+    selectedVisitors.forEach((visitor: any) => {
+      const employee = visitor.person_to_meet || "Unknown";
+      employeeCount[employee] = (employeeCount[employee] || 0) + 1;
+    });
+    const frequentEmployee = Object.entries(employeeCount).reduce(
+      (max: any, current: any) => 
+        current[1] > (max[1] || 0) ? current : max,
+      [null, 0]
+    )[0] || "N/A";
 
-    const topEmployee =
-      Object.entries(
-        employeeMap
-      ).sort(
-        (a: any, b: any) =>
-          Number(b[1]) -
-          Number(a[1])
-      )[0];
+    // Get frequently visited visitor
+    const visitorCount: any = {};
+    selectedVisitors.forEach((visitor: any) => {
+      const name = visitor.full_name || "Unknown";
+      visitorCount[name] = (visitorCount[name] || 0) + 1;
+    });
+    const frequentVisitor = Object.entries(visitorCount).reduce(
+      (max: any, current: any) => 
+        current[1] > (max[1] || 0) ? current : max,
+      [null, 0]
+    )[0] || "N/A";
 
-    const topPurpose =
-      Object.entries(
-        purposeMap
-      ).sort(
-        (a: any, b: any) =>
-          Number(b[1]) -
-          Number(a[1])
-      )[0];
+    // Get common reason
+    const reasonCount: any = {};
+    selectedVisitors.forEach((visitor: any) => {
+      const reason = visitor.purpose_of_visit || "Unknown";
+      reasonCount[reason] = (reasonCount[reason] || 0) + 1;
+    });
+    const commonReason = Object.entries(reasonCount).reduce(
+      (max: any, current: any) => 
+        current[1] > (max[1] || 0) ? current : max,
+      [null, 0]
+    )[0] || "N/A";
 
-    const peakHour =
-      Object.entries(
-        hourMap
-      ).sort(
-        (a: any, b: any) =>
-          Number(b[1]) -
-          Number(a[1])
-      )[0];
+    // Get peak hours
+    const hourCount: any = {};
+    checkedInVisitors.forEach((visitor: any) => {
+      if (visitor.check_in_time) {
+        const hour = new Date(visitor.check_in_time).getHours();
+        hourCount[hour] = (hourCount[hour] || 0) + 1;
+      }
+    });
+    const peakHour = Object.entries(hourCount).reduce(
+      (max: any, current: any) => 
+        current[1] > (max[1] || 0) ? current : max,
+      [null, 0]
+    )[0];
+    const peakHourDisplay = peakHour !== null && peakHour !== undefined 
+      ? `${String(peakHour).padStart(2, '0')}:00` 
+      : "N/A";
 
     return {
 
-      visitorName:
-        topVisitor?.name || "-",
+      total:
+        selectedVisitors.length,
 
-      visitorMobile:
-        topVisitor?.mobile || "-",
+      checkedIn: checkedInVisitors.length,
 
-      revisitCount:
-        topVisitor?.count || 0,
+      checkedOut:
+        selectedVisitors.filter(
+          (visitor: any) =>
+            visitor.status ===
+            "Checked Out"
+        ).length,
 
-      employee:
-        topEmployee?.[0] || "-",
-
-      purpose:
-        topPurpose?.[0] || "-",
-
-      peakHour:
-        peakHour?.[0] || "-"
+      frequentEmployee,
+      frequentVisitor,
+      commonReason,
+      peakHour: peakHourDisplay
 
     };
 
-  }, [visitors]);
+  }, [selectedVisitors]);
 
-  return (
+ return (
 
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#eef4fb",
-        fontFamily:
-          "Arial, sans-serif",
-        overflowX: "hidden"
-      }}
-    >
+  <div style={{
+    minHeight: "100vh",
+    background: "#eef4fb",
+    fontFamily: "Arial, sans-serif",
+    position: "relative"
+  }}>
+    <button
+       onClick={() => setSidebarOpen(
+         !sidebarOpen
+       )}
+       style={{
+         position: "fixed",
+         top: "20px",
+         left: "20px",
+         width: "44px",
+         height: "44px",
+         borderRadius: "12px",
+         border: "none",
+         background: "#0f172a",
+         color: "white",
+         fontSize: "20px",
+         fontWeight: "700",
+         cursor: "pointer",
+         zIndex: 200,
+         boxShadow: "0 4px 12px rgba(15,23,42,0.2)",
+         display: sidebarOpen ? "none" : "block"
+       }}
+     >
 
-      <button
-        onClick={() =>
-          setSidebarOpen(
-            !sidebarOpen
-          )
-        }
-        style={{
-          position: "fixed",
-          top: "22px",
-          left: "22px",
-          width: "58px",
-          height: "58px",
-          borderRadius: "18px",
-          border: "none",
-          background: "#0f172a",
-          color: "white",
-          fontSize: "24px",
-          fontWeight: "700",
-          cursor: "pointer",
-          zIndex: 200,
-          boxShadow:
-            "0 10px 30px rgba(15,23,42,0.18)"
-        }}
-      >
+       ☰
 
-        {
-          sidebarOpen
-          ? "×"
-          : "☰"
-        }
-
-      </button>
+     </button>
+      
+            
 
       {
 
@@ -455,16 +342,17 @@ export default function AdminPage() {
                 position: "fixed",
                 top: 0,
                 left: 0,
-                width: "270px",
+                width: "260px",
                 height: "100vh",
                 background: "#020617",
                 padding:
-                  "100px 18px 24px",
+                  "24px 16px",
                 zIndex: 100,
                 display: "flex",
                 flexDirection: "column",
                 justifyContent:
-                  "space-between"
+                  "space-between",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
               }}
             >
 
@@ -472,30 +360,76 @@ export default function AdminPage() {
 
                 <div
                   style={{
+                    display:
+                      "flex",
+
+                    justifyContent:
+                      "space-between",
+
+                    alignItems:
+                      "center",
+
                     marginBottom:
-                      "36px"
+                      "28px"
                   }}
                 >
 
-                  <h1
-                    style={{
-                      color: "white",
-                      fontSize: "28px",
-                      fontWeight: "800",
-                      marginBottom: "6px"
-                    }}
-                  >
-                    VisitorOS
-                  </h1>
+                  <div>
 
-                  <p
+                    <h1
+                      style={{
+                        color: "white",
+                        fontSize: "26px",
+                        fontWeight: "800",
+                        marginBottom: "4px"
+                      }}
+                    >
+                      VisitorOS
+                    </h1>
+
+                    <p
+                      style={{
+                        color: "#94a3b8",
+                        fontSize: "12px"
+                      }}
+                    >
+                      Admin Portal
+                    </p>
+
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      setSidebarOpen(false)
+                    }
                     style={{
-                      color: "#94a3b8",
-                      fontSize: "13px"
+                      background:
+                        "rgba(255,255,255,0.1)",
+
+                      border:
+                        "none",
+
+                      color:
+                        "white",
+
+                      width:
+                        "36px",
+
+                      height:
+                        "36px",
+
+                      borderRadius:
+                        "10px",
+
+                      cursor:
+                        "pointer",
+
+                      fontSize:
+                        "18px"
                     }}
                   >
-                    Admin Portal
-                  </p>
+                    ✕
+                  </button>
 
                 </div>
 
@@ -506,23 +440,6 @@ export default function AdminPage() {
                     gap: "12px"
                   }}
                 >
-
-                  <button
-                    onClick={() =>
-                      scrollToSection(
-                        "details",
-                        detailsRef
-                      )
-                    }
-                    style={
-                      activeSection ===
-                      "details"
-                      ? sidebarActive
-                      : sidebarButton
-                    }
-                  >
-                    Visitor Details
-                  </button>
 
                   <button
                     onClick={() =>
@@ -539,6 +456,23 @@ export default function AdminPage() {
                     }
                   >
                     Reports
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      scrollToSection(
+                        "details",
+                        detailsRef
+                      )
+                    }
+                    style={
+                      activeSection ===
+                      "details"
+                      ? sidebarActive
+                      : sidebarButton
+                    }
+                  >
+                    Visitor Details
                   </button>
 
                   <button
@@ -563,14 +497,7 @@ export default function AdminPage() {
               </div>
 
               <button
-                onClick={async () => {
-
-                  await fetch(
-                    "/api/auth/logout",
-                    {
-                      method: "POST"
-                    }
-                  );
+                onClick={() => {
 
                   window.location.href =
                     "/login";
@@ -591,540 +518,470 @@ export default function AdminPage() {
 
       <main
         style={{
-          padding:
-            "100px 24px 30px"
+          padding: "80px 24px 30px",
+          maxWidth: "1400px",
+          margin: "0 auto"
+        }}
+      ><div
+    ref={reportsRef}
+    style={{
+      ...sectionCard,
+      marginTop: "24px"
+    }}
+  >
+
+      <h2 style={sectionTitle}>
+        Reports
+      </h2>
+
+      <p style={sectionSub}>
+        Total and date-based visitor reports
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginTop: "22px",
+          marginBottom: "22px",
+          flexWrap: "wrap",
+          gap: "12px"
         }}
       >
 
-        <div
-          ref={detailsRef}
-          style={sectionCard}
+        <h3
+          style={{
+            fontSize: "20px",
+            fontWeight: "700",
+            color: "#0f172a"
+          }}
         >
 
-          <h2 style={sectionTitle}>
-            Visitor Details
-          </h2>
+          {selectedDate
 
-          <p style={sectionSub}>
-            Finalized visitor records
+            ?
+
+            `Reports for ${selectedDate}`
+
+            :
+
+            "Total Reports"}
+
+        </h3>
+
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(
+            e.target.value
+          )}
+          style={filterInput} />
+
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+          gap: "18px"
+        }}
+      >
+
+        <div style={reportCard}>
+
+          <p style={cardLabel}>
+            Total Visitors
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              flexWrap: "wrap",
-              marginTop: "22px",
-              marginBottom: "22px"
-            }}
-          >
+          <h1 style={cardValue}>
+            {analytics.total}
+          </h1>
 
-            <select
-              value={filterType}
-              onChange={(e) =>
-                setFilterType(
-                  e.target.value
-                )
-              }
-              style={filterInput}
-            >
+        </div>
 
-              <option value="all">
-                All Fields
-              </option>
+        <div style={reportCard}>
 
-              <option value="visitor">
-                Visitor Name
-              </option>
+          <p style={cardLabel}>
+            Checked In
+          </p>
 
-              <option value="employee">
-                Employee
-              </option>
+          <h1 style={cardValue}>
+            {analytics.checkedIn}
+          </h1>
 
-              <option value="mobile">
-                Mobile
-              </option>
+        </div>
 
-              <option value="code">
-                Visitor Code
-              </option>
+        <div style={reportCard}>
 
-            </select>
+          <p style={cardLabel}>
+            Checked Out
+          </p>
 
-            <input
-              type="text"
-              placeholder={`Search ${filterType}`}
-              value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
-              style={searchInput}
-            />
+          <h1 style={cardValue}>
+            {analytics.checkedOut}
+          </h1>
 
-            <input
-              type="text"
-              placeholder="DD/MM/YYYY"
-              value={selectedDate}
-              onChange={(e) => {
+        </div>
 
-                let value =
-                  e.target.value
-                    .replace(/\D/g, "");
+      </div>
 
-                if (value.length >= 3) {
+    </div><div
+      ref={detailsRef}
+      style={{
+        ...sectionCard,
+        marginTop: "24px"
+      }}
+    >
 
-                  value =
-                    value.slice(0, 2) +
-                    "/" +
-                    value.slice(2);
+      <h2 style={sectionTitle}>
+        Visitor Details
+      </h2>
 
-                }
+      <p style={sectionSub}>
+        Finalized visitor records
+      </p>
 
-                if (value.length >= 6) {
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          flexWrap: "wrap",
+          marginTop: "22px",
+          marginBottom: "22px"
+        }}
+      >
 
-                  value =
-                    value.slice(0, 5) +
-                    "/" +
-                    value.slice(5, 9);
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(
+            e.target.value
+          )}
+          style={filterInput}
+        >
 
-                }
+          <option value="all">
+            All Fields
+          </option>
 
-                setSelectedDate(value);
+          <option value="visitor">
+            Visitor Name
+          </option>
 
-              }}
-              maxLength={10}
-              style={filterInput}
-            />
+          <option value="employee">
+            Employee
+          </option>
 
-          </div>
+          <option value="mobile">
+            Mobile
+          </option>
 
-          <div
-            style={{
-              overflowX: "auto"
-            }}
-          >
+          <option value="code">
+            Visitor Code
+          </option>
 
-            <table
+        </select>
+
+        <input
+          type="text"
+          placeholder={`Search ${filterType}`}
+          value={search}
+          onChange={(e) => setSearch(
+            e.target.value
+          )}
+          style={searchInput} />
+
+      </div>
+
+      <div
+        style={{
+          overflowX: "auto"
+        }}
+      >
+
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            minWidth: "1200px"
+          }}
+        >
+
+          <thead>
+
+            <tr
               style={{
-                width: "100%",
-                borderCollapse:
-                  "collapse",
-                minWidth: "1200px"
+                background: "#f8fafc"
               }}
             >
 
-              <thead>
+              <th style={tableHeader}>
+                Visitor Code
+              </th>
 
-                <tr
-                  style={{
-                    background:
-                      "#f8fafc"
-                  }}
-                >
+              <th style={tableHeader}>
+                Visitor
+              </th>
 
-                  <th style={tableHeader}>
-                    Visitor Code
-                  </th>
+              <th style={tableHeader}>
+                Mobile
+              </th>
 
-                  <th style={tableHeader}>
-                    Visitor
-                  </th>
+              <th style={tableHeader}>
+                Purpose
+              </th>
 
-                  <th style={tableHeader}>
-                    Mobile
-                  </th>
+              <th style={tableHeader}>
+                Employee
+              </th>
 
-                  <th style={tableHeader}>
-                    Purpose
-                  </th>
+              <th style={tableHeader}>
+                Status
+              </th>
 
-                  <th style={tableHeader}>
-                    Employee
-                  </th>
+              <th style={tableHeader}>
+                Check In
+              </th>
 
-                  <th style={tableHeader}>
-                    Status
-                  </th>
+              <th style={tableHeader}>
+                Check Out
+              </th>
 
-                  <th style={tableHeader}>
-                    Check In
-                  </th>
+            </tr>
 
-                  <th style={tableHeader}>
-                    Check Out
-                  </th>
+          </thead>
 
-                </tr>
+          <tbody>
+            {filteredVisitors.map(
+              (visitor: any) => (
 
-              </thead>
+              <tr
+                key={visitor.id}
+              >
 
-              <tbody>
+                <td style={tableCell}>
+                  {visitor.visitor_code}
+                </td>
 
-                {
+                <td style={tableCell}>
+                  {visitor.full_name}
+                </td>
 
-                  filteredVisitors.map(
-                    (visitor: any) => (
+                <td style={tableCell}>
+                  {visitor.mobile_number}
+                </td>
 
-                      <tr
-                        key={visitor.id}
-                      >
+                <td style={tableCell}>
+                  {visitor.purpose_of_visit}
+                </td>
 
-                        <td style={tableCell}>
-                          {
-                            visitor.visitor_code
-                          }
-                        </td>
+                <td style={tableCell}>
+                  {visitor.person_to_meet}
+                </td>
 
-                        <td style={tableCell}>
-                          {
-                            visitor.full_name
-                          }
-                        </td>
+                <td style={tableCell}>
 
-                        <td style={tableCell}>
-                          {
-                            visitor.mobile_number
-                          }
-                        </td>
+                  <span
+                    style={{
+                      background: visitor.status ===
+                        "Checked In"
 
-                        <td style={tableCell}>
-                          {
-                            visitor.purpose_of_visit
-                          }
-                        </td>
+                        ? "#dcfce7"
 
-                        <td style={tableCell}>
-                          {
-                            visitor.person_to_meet
-                          }
-                        </td>
+                        : "#fee2e2",
 
-                        <td style={tableCell}>
+                      color: visitor.status ===
+                        "Checked In"
 
-                          <span
-                            style={{
+                        ? "#166534"
 
-                              background:
+                        : "#991b1b",
 
-                                visitor.status ===
-                                "Checked In"
+                      padding: "8px 12px",
 
-                                ? "#dcfce7"
+                      borderRadius: "999px",
 
-                                : "#fee2e2",
+                      fontSize: "12px",
 
-                              color:
+                      fontWeight: "700"
+                    }}
+                  >
 
-                                visitor.status ===
-                                "Checked In"
+                    {visitor.status}
 
-                                ? "#166534"
+                  </span>
 
-                                : "#991b1b",
+                </td>
 
-                              padding:
-                                "8px 12px",
+                <td style={tableCell}>
 
-                              borderRadius:
-                                "999px",
+                  {visitor.check_in_time
 
-                              fontSize: "12px",
-
-                              fontWeight: "700"
-
-                            }}
-                          >
-
-                            {
-                              visitor.status
-                            }
-
-                          </span>
-
-                        </td>
-
-                        <td style={tableCell}>
-
-                          {
-
-                            visitor.check_in_time
-
-                            ? new Date(
-                                visitor.check_in_time
-                              ).toLocaleString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit"
-                                }
-                              )
-
-                            : "-"
-
-                          }
-
-                        </td>
-
-                        <td style={tableCell}>
-
-                          {
-
-                            visitor.check_out_time
-
-                            ? new Date(
-                                visitor.check_out_time
-                              ).toLocaleString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit"
-                                }
-                              )
-
-                            : "-"
-
-                          }
-
-                        </td>
-
-                      </tr>
-
+                    ? new Date(
+                      visitor.check_in_time
+                    ).toLocaleString(
+                      "en-IN",
+                      {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      }
                     )
-                  )
 
-                }
+                    : "-"}
 
-              </tbody>
+                </td>
 
-            </table>
+                <td style={tableCell}>
 
-          </div>
+                  {visitor.check_out_time
+
+                    ? new Date(
+                      visitor.check_out_time
+                    ).toLocaleString(
+                      "en-IN",
+                      {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      }
+                    )
+
+                    : "-"}
+
+                </td>
+
+              </tr>
+
+              )
+            )}
+
+          </tbody>
+
+      </table>
+
+    </div>
 
         </div>
 
-        <div
-          ref={reportsRef}
-          style={{
-            ...sectionCard,
-            marginTop: "24px"
-          }}
-        >
-
-          <h2 style={sectionTitle}>
-            Reports
-          </h2>
-
-          <p style={sectionSub}>
-            Operational visitor summaries
-          </p>
-
+        {activeSection === "analytics" && (
           <div
+            ref={analyticsRef}
             style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit,minmax(220px,1fr))",
-              gap: "18px",
-              marginTop: "22px"
+              ...sectionCard,
+              marginTop: "24px",
+              marginBottom: "30px"
             }}
           >
 
-            <div style={reportCard}>
+            <h2 style={sectionTitle}>
+              Analytics
+            </h2>
 
-              <p style={cardLabel}>
-                Total Visitors
-              </p>
+            <p style={sectionSub}>
+              Visitor behavior insights
+            </p>
 
-              <h1 style={cardValue}>
-                {
-                  visitors.length
-                }
-              </h1>
+            <div
+              style={{
+                marginTop: "24px",
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit,minmax(260px,1fr))",
+                gap: "18px"
+              }}
+            >
 
-            </div>
+              <div style={reportCard}>
 
-            <div style={reportCard}>
+                <h3 style={analyticsTitle}>
+                  Frequently Visited Employee
+                </h3>
 
-              <p style={cardLabel}>
-                Checked In
-              </p>
+                <p style={analyticsText}>
+                  {analytics.frequentEmployee}
+                </p>
 
-              <h1 style={cardValue}>
-                {
-                  checkedInVisitors.length
-                }
-              </h1>
+              </div>
 
-            </div>
+              <div style={reportCard}>
 
-            <div style={reportCard}>
+                <h3 style={analyticsTitle}>
+                  Frequently Visited Visitor
+                </h3>
 
-              <p style={cardLabel}>
-                Checked Out
-              </p>
+                <p style={analyticsText}>
+                  {analytics.frequentVisitor}
+                </p>
 
-              <h1 style={cardValue}>
-                {
-                  checkedOutVisitors.length
-                }
-              </h1>
+              </div>
 
-            </div>
+              <div style={reportCard}>
 
-            <div style={reportCard}>
+                <h3 style={analyticsTitle}>
+                  Common Reason
+                </h3>
 
-              <p style={cardLabel}>
-                Today's Visitors
-              </p>
+                <p style={analyticsText}>
+                  {analytics.commonReason}
+                </p>
 
-              <h1 style={cardValue}>
-                {
-                  todayVisitors.length
-                }
-              </h1>
+              </div>
 
-            </div>
+              <div style={reportCard}>
 
-          </div>
+                <h3 style={analyticsTitle}>
+                  Peak Hours
+                </h3>
 
-        </div>
+                <p style={analyticsText}>
+                  {analytics.peakHour}
+                </p>
 
-        <div
-          ref={analyticsRef}
-          style={{
-            ...sectionCard,
-            marginTop: "24px",
-            marginBottom: "30px"
-          }}
-        >
-
-          <h2 style={sectionTitle}>
-            Analytics
-          </h2>
-
-          <p style={sectionSub}>
-            Visitor behavior insights
-          </p>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit,minmax(260px,1fr))",
-              gap: "18px",
-              marginTop: "22px"
-            }}
-          >
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Most Frequent Visitor
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.visitorName
-                }
-              </h3>
-
-              <p style={analyticsText}>
-                {
-                  analytics.visitorMobile
-                }
-              </p>
-
-              <p style={analyticsText}>
-                {
-                  analytics.revisitCount
-                } revisits
-              </p>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Most Visited Employee
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.employee
-                }
-              </h3>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Top Purpose
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.purpose
-                }
-              </h3>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Peak Hour
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.peakHour
-                }:00
-              </h3>
+              </div>
 
             </div>
 
           </div>
-
-        </div>
+        )}
 
       </main>
 
-    </div>
+  </div>
 
   );
 
 }
-
 const sectionCard = {
 
   background: "white",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #e2e8f0",
 
-  borderRadius: "24px",
+  borderRadius: "16px",
 
-  padding: "26px",
+  padding: "32px",
 
   boxShadow:
-    "0 10px 30px rgba(15,23,42,0.04)"
+    "0 2px 8px rgba(15,23,42,0.06)"
 };
 
 const sectionTitle = {
 
-  fontSize: "32px",
+  fontSize: "26px",
 
-  fontWeight: "800",
+  fontWeight: "700",
 
-  color: "#0f172a"
+  color: "#0f172a",
+
+  marginBottom: "12px",
+
+  letterSpacing: "-0.3px"
 };
 
 const sectionSub = {
@@ -1142,69 +999,81 @@ const searchInput = {
 
   minWidth: "260px",
 
-  padding: "15px 16px",
+  padding: "12px 14px",
 
-  borderRadius: "16px",
+  borderRadius: "10px",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #cbd5e1",
 
   background: "#ffffff",
 
   fontSize: "14px",
 
-  outline: "none"
+  outline: "none",
+
+  transition: "border-color 0.2s ease"
 };
 
 const filterInput = {
 
-  padding: "15px 16px",
+  padding: "12px 14px",
 
-  borderRadius: "16px",
+  borderRadius: "10px",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #cbd5e1",
 
   background: "#ffffff",
 
   fontSize: "14px",
 
-  outline: "none"
+  outline: "none",
+
+  transition: "border-color 0.2s ease"
 };
 
 const tableHeader = {
 
   textAlign: "left" as const,
 
-  padding: "18px",
+  padding: "16px",
 
   color: "#475569",
 
   fontSize: "12px",
 
-  fontWeight: "800"
+  fontWeight: "600",
+
+  borderBottom: "1px solid #e2e8f0",
+
+  whiteSpace: "nowrap" as const,
+
+  letterSpacing: "0.2px"
 };
 
 const tableCell = {
 
-  padding: "18px",
+  padding: "14px",
 
-  borderTop:
+  borderBottom:
     "1px solid #f1f5f9",
 
-  color: "#0f172a",
+  color: "#334155",
 
-  fontSize: "14px"
+  fontSize: "14px",
+
+  verticalAlign: "middle" as const
 };
 
 const reportCard = {
 
-  background: "#f8fafc",
+  background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #e2e8f0",
 
-  borderRadius: "20px",
+  borderRadius: "14px",
 
   padding: "24px"
 };
@@ -1213,38 +1082,56 @@ const cardLabel = {
 
   color: "#64748b",
 
-  fontSize: "13px",
+  fontSize: "12px",
 
-  marginBottom: "14px"
+  marginBottom: "12px",
+
+  fontWeight: "500",
+
+  letterSpacing: "0.3px",
+
+  textTransform: "uppercase"
 };
 
 const cardValue = {
 
-  fontSize: "52px",
-
-  fontWeight: "800",
-
-  color: "#0f172a"
-};
-
-const analyticsTitle = {
-
-  fontSize: "22px",
+  fontSize: "42px",
 
   fontWeight: "700",
 
   color: "#0f172a",
 
-  marginBottom: "8px"
+  margin: 0,
+
+  letterSpacing: "-0.5px"
+};
+
+const analyticsTitle = {
+
+  fontSize: "12px",
+
+  fontWeight: "500",
+
+  color: "#64748b",
+
+  marginBottom: "12px",
+
+  letterSpacing: "0.3px",
+
+  textTransform: "uppercase"
 };
 
 const analyticsText = {
 
-  color: "#475569",
+  color: "#0f172a",
 
-  fontSize: "14px",
+  fontSize: "28px",
 
-  marginTop: "6px"
+  fontWeight: "700",
+
+  margin: 0,
+
+  letterSpacing: "-0.3px"
 };
 
 const sidebarButton = {
@@ -1255,19 +1142,21 @@ const sidebarButton = {
 
   color: "#cbd5e1",
 
-  padding: "14px 16px",
+  padding: "12px 14px",
 
-  borderRadius: "14px",
+  borderRadius: "8px",
 
   cursor: "pointer",
 
   fontSize: "14px",
 
-  fontWeight: "600",
+  fontWeight: "500",
 
   textAlign: "left" as const,
 
-  width: "100%"
+  width: "100%",
+
+  transition: "all 0.2s ease"
 };
 
 const sidebarActive = {
@@ -1275,9 +1164,11 @@ const sidebarActive = {
   ...sidebarButton,
 
   background:
-    "rgba(255,255,255,0.12)",
+    "rgba(255,255,255,0.15)",
 
-  color: "white"
+  color: "white",
+
+  fontWeight: "600"
 };
 
 const logoutButton = {
@@ -1289,9 +1180,9 @@ const logoutButton = {
 
   color: "white",
 
-  padding: "15px",
+  padding: "13px",
 
-  borderRadius: "16px",
+  borderRadius: "10px",
 
   cursor: "pointer",
 

@@ -7,12 +7,11 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "ESNext",
+    "module": "esnext",
     "skipLibCheck": true,
     "strict": false,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -28,8 +27,6 @@
       ]
     },
     "allowJs": true,
-    "noEmit": true,
-    "isolatedModules": true,
     "plugins": [
       {
         "name": "next"
@@ -41,7 +38,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "app/components/RegistrationQr"  ],
   "exclude": [
     "node_modules"
   ]

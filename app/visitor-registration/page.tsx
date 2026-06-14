@@ -509,7 +509,7 @@ export default function VisitorRegistrationPage() {
             border: "none",
             borderRadius: "16px",
             background:
-              "linear-gradient(135deg, #2563eb, #1d4ed8)",
+              "linear-gradient(135deg, #004B87, #003355)",
             color: "white",
             fontSize: "19px",
             fontWeight: "700",
