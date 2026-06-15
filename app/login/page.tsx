@@ -242,8 +242,8 @@ export default function LoginPage() {
             borderRadius: "14px",
             background:
               loading
-                ? "#93c5fd"
-                : "#004B87",
+                ? "#18856c"
+                : "#0b6756",
             color: "white",
             fontSize: "17px",
             fontWeight: "700",

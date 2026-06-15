@@ -113,7 +113,7 @@ export default function HomePage() {
               border:
                 "none",
               background:
-                "#004B87",
+                "#008779",
               color:
                 "white",
               fontWeight:
@@ -167,7 +167,7 @@ export default function HomePage() {
                 fontSize:
                   "14px",
                 color:
-                  "#004B87",
+                  "#1fafa3",
                 fontWeight:
                   "700"
               }}
@@ -240,7 +240,7 @@ export default function HomePage() {
                   border:
                     "none",
                   background:
-                    "#004B87",
+                    "#007e87",
                   color:
                     "white",
                   fontWeight:
@@ -250,7 +250,7 @@ export default function HomePage() {
                   cursor:
                     "pointer",
                   boxShadow:
-                    "0 12px 30px rgba(0,75,135,0.25)"
+                    "0 12px 30px rgba(5, 100, 105, 0.6)"
                 }}
               >
                 Register Visitor
@@ -315,7 +315,7 @@ export default function HomePage() {
                 maxWidth:
                   "420px",
                 boxShadow:
-                  "0 25px 50px rgba(15,23,42,0.08)"
+                  "0 25px 50px rgba(71, 228, 239, 0.47)"
               }}
             >
 
@@ -371,7 +371,7 @@ export default function HomePage() {
                     borderRadius:
                       "999px",
                     background:
-                      "#22c55e"
+                      "#22c5a5"
                   }}
                 />
 

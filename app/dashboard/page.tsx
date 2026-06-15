@@ -300,7 +300,7 @@ export default function DashboardPage() {
             : "240px",
 
           background:
-            "#004B87",
+            "#008777",
 
           color:
             "white",
@@ -627,7 +627,7 @@ export default function DashboardPage() {
             }
             style={{
               background:
-                "#004B87",
+                "#008780c5",
 
               border:
                 "none",
@@ -1328,7 +1328,7 @@ const filterButton = {
     "10px",
 
   background:
-    "#004B87",
+    "#008779eb",
 
   color:
     "white",
@@ -1346,7 +1346,7 @@ const filterButton = {
     "all 0.2s ease",
 
   boxShadow:
-    "0 2px 8px rgba(0,75,135,0.2)"
+    "0 2px 8px rgba(58, 209, 183, 0.3)"
 };
 
 const tableHeader = {
@@ -1432,7 +1432,7 @@ const analyticsBox = {
 
   padding: "24px",
 
-  boxShadow: "0 2px 8px rgba(15,23,42,0.04)"
+  boxShadow: "0 2px 8px rgba(77, 249, 218, 0.14)"
 
 };
 
@@ -1458,7 +1458,7 @@ const analyticsValueText = {
 
   fontWeight: "700",
 
-  color: "#0f172a",
+  color: "#53c0a7d7",
 
   margin: 0,
 
