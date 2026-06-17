@@ -152,6 +152,14 @@ export default function VisitorRegistrationPage() {
       const data =
         await response.json();
 
+if (data.returningVisitor) {
+
+  alert(
+    "Welcome back! Visitor checked in successfully."
+  );
+
+}
+
       if (response.ok) {
 
         alert(

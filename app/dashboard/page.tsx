@@ -30,9 +30,6 @@ export default function DashboardPage() {
     setActiveSection
   ] = useState("dashboard");
 
-  const analyticsRef =
-    useRef<HTMLDivElement>(null);
-
   const visitorsRef =
     useRef<HTMLDivElement>(null);
 
@@ -225,34 +222,6 @@ export default function DashboardPage() {
 
       }
     );
-
-  const mostCommonPurpose =
-
-    todayVisitors.length > 0
-
-    ? Object.entries(
-
-        todayVisitors.reduce(
-          (acc: any, visitor: any) => {
-
-            const purpose =
-              visitor.purpose_of_visit || "Unknown";
-
-            acc[purpose] =
-              (acc[purpose] || 0) + 1;
-
-            return acc;
-
-          },
-          {}
-        )
-
-      ).sort(
-        (a: any, b: any) =>
-          b[1] - a[1]
-      )[0][0]
-
-    : "-";
 
   return (
 
@@ -536,36 +505,6 @@ export default function DashboardPage() {
                     }
                   >
                     Active Visitors
-                  </button>
-
-                  <button
-                    onClick={() => {
-
-                      setActiveSection(
-                        "analytics"
-                      );
-
-                      analyticsRef.current
-                        ?.scrollIntoView({
-                          behavior:
-                            "smooth"
-                        });
-
-                    }}
-                    style={
-                      activeSection ===
-                      "analytics"
-
-                      ?
-
-                      sidebarButtonActive
-
-                      :
-
-                      sidebarButton
-                    }
-                  >
-                    Analytics
                   </button>
 
                 </div>
@@ -1074,117 +1013,6 @@ export default function DashboardPage() {
 
         </div>
 
-        {
-
-          activeSection ===
-          "analytics"
-
-          && (
-
-            <div
-              ref={analyticsRef}
-              style={{
-                marginTop: "24px",
-                background: "white",
-                borderRadius: "18px",
-                border: "1px solid #dbe4f0",
-                padding: "24px"
-              }}
-            >
-
-              <h2
-                style={{
-                  fontSize: "28px",
-                  fontWeight: "800",
-                  color: "#0f172a",
-                  marginBottom: "8px"
-                }}
-              >
-                Visitor Analytics
-              </h2>
-
-              <p
-                style={{
-                  color: "#64748b",
-                  marginBottom: "24px"
-                }}
-              >
-                Daily visitor insights
-              </p>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    isMobile
-                    ? "1fr"
-                    : "repeat(3, 1fr)",
-                  gap: "16px"
-                }}
-              >
-
-                <div style={analyticsBox}>
-
-                  <p style={analyticsTitle}>
-                    Most Common Purpose
-                  </p>
-
-                  <h3 style={analyticsValueText}>
-                    {mostCommonPurpose}
-                  </h3>
-
-                </div>
-
-                <div style={analyticsBox}>
-
-                  <p style={analyticsTitle}>
-                    Checked In
-                  </p>
-
-                  <h3 style={analyticsValueText}>
-
-                    {
-
-                      todayVisitors.filter(
-                        (v) =>
-                          v.status === "Checked In"
-                      ).length
-
-                    }
-
-                  </h3>
-
-                </div>
-
-                <div style={analyticsBox}>
-
-                  <p style={analyticsTitle}>
-                    Checked Out
-                  </p>
-
-                  <h3 style={analyticsValueText}>
-
-                    {
-
-                      todayVisitors.filter(
-                        (v) =>
-                          v.status === "Checked Out"
-                      ).length
-
-                    }
-
-                  </h3>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          )
-
-        }
-
       </main>
 
     </div>
@@ -1419,49 +1247,5 @@ const checkoutButton = {
 
   whiteSpace:
     "nowrap"
-
-};
-
-const analyticsBox = {
-
-  background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
-
-  border: "1px solid #e2e8f0",
-
-  borderRadius: "12px",
-
-  padding: "24px",
-
-  boxShadow: "0 2px 8px rgba(77, 249, 218, 0.14)"
-
-};
-
-const analyticsTitle = {
-
-  color: "#64748b",
-
-  fontSize: "12px",
-
-  marginBottom: "12px",
-
-  fontWeight: "500",
-
-  letterSpacing: "0.3px",
-
-  textTransform: "uppercase"
-
-};
-
-const analyticsValueText = {
-
-  fontSize: "28px",
-
-  fontWeight: "700",
-
-  color: "#53c0a7d7",
-
-  margin: 0,
-
-  letterSpacing: "-0.3px"
 
 };

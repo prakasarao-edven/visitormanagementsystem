@@ -71,6 +71,9 @@ export async function POST(
       String(countryCode || "+91")
         .trim();
 
+    const finalMobile =
+      `${sanitizedCountryCode}${sanitizedMobile}`;
+
     if (
       sanitizedName.length < 2 ||
       sanitizedName.length > 100
@@ -139,48 +142,117 @@ export async function POST(
 
     try {
 
-      const visitorCode =
-        generateVisitorCode();
-
       const [existingVisitors] =
         await connection.query(
 
           `
-          SELECT id
+          SELECT *
 
           FROM visitors
 
           WHERE mobile_number = ?
-          AND status = 'Checked In'
+
+          ORDER BY id DESC
 
           LIMIT 1
           `,
 
           [
-            `${sanitizedCountryCode}${sanitizedMobile}`
+            finalMobile
           ]
 
         );
 
-      if (
-        (existingVisitors as any[])
-          .length > 0
-      ) {
+      const existingVisitor =
+        (existingVisitors as any[])[0];
+
+      if (existingVisitor) {
+
+        await connection.query(
+
+          `
+          INSERT INTO visitors (
+
+            visitor_code,
+
+            full_name,
+
+            mobile_number,
+
+            email,
+
+            purpose_of_visit,
+
+            person_to_meet,
+
+            id_proof_type,
+
+            id_proof_number,
+
+            remarks,
+
+            status,
+
+            check_in_time
+
+          )
+
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+          `,
+
+          [
+
+            generateVisitorCode(),
+
+            existingVisitor.full_name,
+
+            existingVisitor.mobile_number,
+
+            existingVisitor.email || null,
+
+            purposeOfVisit ||
+            existingVisitor.purpose_of_visit ||
+            null,
+
+            personToMeet ||
+            existingVisitor.person_to_meet ||
+            null,
+
+            existingVisitor.id_proof_type || null,
+
+            existingVisitor.id_proof_number || null,
+
+            remarks || null,
+
+            "Checked In"
+
+          ]
+
+        );
 
         return NextResponse.json(
 
           {
-            error:
-              "Visitor is already checked in"
+
+            success: true,
+
+            returningVisitor: true,
+
+            message:
+              "Welcome back visitor checked in successfully"
+
           },
 
           {
-            status: 400
+            status: 200
           }
 
         );
 
       }
+
+      const visitorCode =
+        generateVisitorCode();
 
       const [result] =
         await connection.query(
@@ -221,7 +293,7 @@ export async function POST(
 
             sanitizedName,
 
-            `${sanitizedCountryCode}${sanitizedMobile}`,
+            finalMobile,
 
             email || null,
 

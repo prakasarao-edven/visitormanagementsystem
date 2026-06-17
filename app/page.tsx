@@ -18,12 +18,10 @@ export default function HomePage() {
 
       try {
 
-        const qr =
-          await QRCode.toDataURL(
-
-            "https://fled-reprimand-ipod.ngrok-free.dev/visitor-registration"
-
-          );
+       const qr =
+  await QRCode.toDataURL(
+    "https://fled-reprimand-ipod.ngrok-free.dev/visitor-registration"
+  );
 
         setQrCode(qr);
 
