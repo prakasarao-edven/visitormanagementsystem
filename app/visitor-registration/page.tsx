@@ -152,6 +152,14 @@ export default function VisitorRegistrationPage() {
       const data =
         await response.json();
 
+if (data.returningVisitor) {
+
+  alert(
+    "Welcome back! Visitor checked in successfully."
+  );
+
+}
+
       if (response.ok) {
 
         alert(
@@ -509,14 +517,14 @@ export default function VisitorRegistrationPage() {
             border: "none",
             borderRadius: "16px",
             background:
-              "linear-gradient(135deg, #2563eb, #1d4ed8)",
+              "linear-gradient(135deg, #2ce1d2, #043e3e)",
             color: "white",
             fontSize: "19px",
             fontWeight: "700",
             cursor: "pointer",
             marginTop: "10px",
             boxShadow:
-              "0 8px 20px rgba(37,99,235,0.35)"
+              "0 8px 20px #25ebdb59"
           }}
         >
           Register Visitor

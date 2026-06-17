@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState
+} from "react";
 
 export default function DashboardPage() {
 
@@ -21,8 +25,10 @@ export default function DashboardPage() {
   const [isMobile, setIsMobile] =
     useState(false);
 
-  const analyticsRef =
-    useRef<HTMLDivElement>(null);
+  const [
+    activeSection,
+    setActiveSection
+  ] = useState("dashboard");
 
   const visitorsRef =
     useRef<HTMLDivElement>(null);
@@ -57,48 +63,37 @@ export default function DashboardPage() {
     try {
 
       const response =
-      await fetch(
-  "/api/visitors/list",
-  {
-    credentials: "include"
-  }
-);
+        await fetch(
+          "/api/visitors/list",
+          {
+            credentials:
+              "include"
+          }
+        );
 
-      
-        const data =
+      const data =
         await response.json();
 
-      console.log(
-  "VISITORS API RESPONSE:",
-  data
-);
+      if (
+        response.ok &&
+        Array.isArray(data.visitors)
+      ) {
 
-console.log(
-  "STATUS:",
-  response.status
-);
-  
+        setVisitors(
+          data.visitors
+        );
 
-        if (
-  response.ok &&
-  Array.isArray(data.visitors)
-) {
+      }
 
-  setVisitors(data.visitors);
+      else {
 
-}
+        setVisitors([]);
 
-else {
+      }
 
-  console.log(
-    "Visitors API Error:",
-    data
-  );
+    }
 
-  setVisitors([]);
-
-}
-    } catch (error) {
+    catch (error) {
 
       console.log(error);
 
@@ -142,7 +137,9 @@ else {
 
       }
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
       console.log(error);
 
@@ -150,119 +147,81 @@ else {
 
   };
 
-  const handleCheckoutUpdate =
-    async (
-      visitorId: number,
-      checkOutTime: string
-    ) => {
+  const today =
+    new Date()
+      .toDateString();
 
-      try {
+  const todayVisitors =
+    visitors.filter(
+      (visitor) => {
 
-        await fetch(
+        if (
+          !visitor.check_in_time
+        ) {
 
-          "/api/visitors/update-checkout",
+          return false;
 
-          {
+        }
 
-            method: "PUT",
+        return (
 
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
+          new Date(
+            visitor.check_in_time
+          ).toDateString()
 
-            body: JSON.stringify({
+          ===
 
-              visitorId,
-
-              checkOutTime
-
-            })
-
-          }
+          today
 
         );
 
-        fetchVisitors();
-
-      } catch (error) {
-
-        console.log(error);
-
       }
-
-    };
+    );
 
   const filteredVisitors =
-    visitors.filter((visitor) => {
+    todayVisitors.filter(
+      (visitor) => {
 
-      const matchesSearch =
+        const matchesSearch =
 
-        visitor.full_name
-          ?.toLowerCase()
-          .includes(
-            searchTerm.toLowerCase()
-          )
+          visitor.full_name
+            ?.toLowerCase()
+            .includes(
+              searchTerm.toLowerCase()
+            )
 
-        ||
+          ||
 
-        visitor.mobile_number
-          ?.toLowerCase()
-          .includes(
-            searchTerm.toLowerCase()
-          )
+          visitor.mobile_number
+            ?.toLowerCase()
+            .includes(
+              searchTerm.toLowerCase()
+            )
 
-        ||
+          ||
 
-        visitor.visitor_code
-          ?.toLowerCase()
-          .includes(
-            searchTerm.toLowerCase()
-          );
+          visitor.visitor_code
+            ?.toLowerCase()
+            .includes(
+              searchTerm.toLowerCase()
+            );
 
-      const matchesActive =
+        const matchesActive =
 
-        showActiveOnly
+          showActiveOnly
 
-        ? visitor.status ===
-          "Checked In"
+          ? visitor.status ===
+            "Checked In"
 
-        : true;
+          : true;
 
-      return (
-        matchesSearch &&
-        matchesActive
-      );
+        return (
+          matchesSearch &&
+          matchesActive
+        );
 
-    });
-
-  const mostCommonPurpose =
-
-    visitors.length > 0
-
-    ? Object.entries(
-
-        visitors.reduce(
-          (acc: any, visitor: any) => {
-
-            const purpose =
-              visitor.purpose_of_visit || "Unknown";
-
-            acc[purpose] =
-              (acc[purpose] || 0) + 1;
-
-            return acc;
-
-          },
-          {}
-        )
-
-      ).sort(
-        (a: any, b: any) =>
-          b[1] - a[1]
-      )[0][0]
-
-    : "-";
+      }
+    );
 
   return (
 
@@ -277,7 +236,6 @@ else {
         position: "relative"
       }}
     >
-
       {
 
         isMobile &&
@@ -306,25 +264,19 @@ else {
       <aside
         style={{
           width:
-
             sidebarCollapsed
-
             ? "0px"
-
             : "240px",
 
           background:
-            "#2563eb",
+            "#008777",
 
           color:
             "white",
 
           padding:
-
             sidebarCollapsed
-
             ? "0px"
-
             : "22px 16px",
 
           overflow:
@@ -412,11 +364,9 @@ else {
                   </div>
 
                   <button
-
                     onClick={() =>
                       setSidebarCollapsed(true)
                     }
-
                     style={{
                       background:
                         "rgba(255,255,255,0.18)",
@@ -443,9 +393,7 @@ else {
                         "16px"
                     }}
                   >
-
                     ✕
-
                   </button>
 
                 </div>
@@ -466,6 +414,12 @@ else {
                   <button
                     onClick={() => {
 
+                      setActiveSection(
+                        "dashboard"
+                      );
+
+                      setShowActiveOnly(false);
+
                       window.scrollTo({
                         top: 0,
                         behavior:
@@ -474,7 +428,16 @@ else {
 
                     }}
                     style={
+                      activeSection ===
+                      "dashboard"
+
+                      ?
+
                       sidebarButtonActive
+
+                      :
+
+                      sidebarButton
                     }
                   >
                     Dashboard
@@ -482,6 +445,12 @@ else {
 
                   <button
                     onClick={() => {
+
+                      setActiveSection(
+                        "registrations"
+                      );
+
+                      setShowActiveOnly(false);
 
                       visitorsRef.current
                         ?.scrollIntoView({
@@ -491,6 +460,15 @@ else {
 
                     }}
                     style={
+                      activeSection ===
+                      "registrations"
+
+                      ?
+
+                      sidebarButtonActive
+
+                      :
+
                       sidebarButton
                     }
                   >
@@ -499,6 +477,10 @@ else {
 
                   <button
                     onClick={() => {
+
+                      setActiveSection(
+                        "active"
+                      );
 
                       setShowActiveOnly(true);
 
@@ -510,27 +492,19 @@ else {
 
                     }}
                     style={
+                      activeSection ===
+                      "active"
+
+                      ?
+
+                      sidebarButtonActive
+
+                      :
+
                       sidebarButton
                     }
                   >
                     Active Visitors
-                  </button>
-
-                  <button
-                    onClick={() => {
-
-                      analyticsRef.current
-                        ?.scrollIntoView({
-                          behavior:
-                            "smooth"
-                        });
-
-                    }}
-                    style={
-                      sidebarButton
-                    }
-                  >
-                    Analytics
                   </button>
 
                 </div>
@@ -538,11 +512,7 @@ else {
               </div>
 
               <button
-
                 onClick={() => {
-
-                  document.cookie =
-                    "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
                   localStorage.clear();
 
@@ -550,9 +520,7 @@ else {
                     "/login";
 
                 }}
-
                 style={logoutButton}
-
               >
                 Logout
               </button>
@@ -569,13 +537,11 @@ else {
         style={{
           flex: 1,
           padding:
-
             isMobile
             ? "12px"
             : "24px"
         }}
       >
-
         <div
           style={{
             display:
@@ -593,16 +559,14 @@ else {
         >
 
           <button
-
             onClick={() =>
               setSidebarCollapsed(
                 !sidebarCollapsed
               )
             }
-
             style={{
               background:
-                "#2563eb",
+                "#008780c5",
 
               border:
                 "none",
@@ -626,9 +590,7 @@ else {
                 "18px"
             }}
           >
-
             ☰
-
           </button>
 
           <div
@@ -645,12 +607,10 @@ else {
                 "600"
             }}
           >
-
             {
               new Date()
                 .toLocaleDateString()
             }
-
           </div>
 
         </div>
@@ -665,7 +625,6 @@ else {
           <h1
             style={{
               fontSize:
-
                 isMobile
                 ? "28px"
                 : "40px",
@@ -758,20 +717,20 @@ else {
 
           <div style={miniCard}>
             <p style={miniLabel}>
-              Total
+              Headcount
             </p>
             <h2 style={miniValue}>
-              {visitors.length}
+              {todayVisitors.length}
             </h2>
           </div>
 
           <div style={miniCard}>
             <p style={miniLabel}>
-              Active
+              Check Ins
             </p>
             <h2 style={miniValue}>
               {
-                visitors.filter(
+                todayVisitors.filter(
                   (v) =>
                     v.status ===
                     "Checked In"
@@ -782,11 +741,11 @@ else {
 
           <div style={miniCard}>
             <p style={miniLabel}>
-              Out
+              Check Outs
             </p>
             <h2 style={miniValue}>
               {
-                visitors.filter(
+                todayVisitors.filter(
                   (v) =>
                     v.status ===
                     "Checked Out"
@@ -798,13 +757,11 @@ else {
         </div>
 
         <button
-
           onClick={() =>
             setShowActiveOnly(
               !showActiveOnly
             )
           }
-
           style={{
             ...filterButton,
             width: "100%",
@@ -885,7 +842,6 @@ else {
                 </thead>
 
                 <tbody>
-
                   {
 
                     filteredVisitors.map(
@@ -986,60 +942,13 @@ else {
 
                           {
 
-                            visitor.status ===
-                            "Checked Out"
+                            visitor.check_out_time
 
-                            ? (
-
-                              <input
-
-                                type="datetime-local"
-
-                                defaultValue={
-
-                                  visitor.check_out_time
-
-                                  ? new Date(
-                                      visitor.check_out_time
-                                    )
-                                      .toISOString()
-                                      .slice(0, 16)
-
-                                  : ""
-                                }
-
-                                onBlur={(e) =>
-                                  handleCheckoutUpdate(
-
-                                    visitor.id,
-
-                                    e.target.value
-
-                                  )
-                                }
-
-                                style={{
-
-                                  padding:
-                                    "8px 10px",
-
-                                  borderRadius:
-                                    "10px",
-
-                                  border:
-                                    "1px solid #cbd5e1",
-
-                                  fontSize:
-                                    "13px"
-
-                                }}
-
-                              />
-
-                            )
+                            ? new Date(
+                                visitor.check_out_time
+                              ).toLocaleString()
 
                             : "-"
-
                           }
 
                         </td>
@@ -1070,20 +979,16 @@ else {
                             : (
 
                               <button
-
                                 onClick={() =>
                                   handleCheckOut(
                                     visitor.id
                                   )
                                 }
-
                                 style={
                                   checkoutButton
                                 }
                               >
-
                                 Check Out
-
                               </button>
 
                             )
@@ -1101,106 +1006,6 @@ else {
                 </tbody>
 
               </table>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <div
-          ref={analyticsRef}
-          style={{
-            marginTop: "24px",
-            background: "white",
-            borderRadius: "18px",
-            border: "1px solid #dbe4f0",
-            padding: "24px"
-          }}
-        >
-
-          <h2
-            style={{
-              fontSize: "28px",
-              fontWeight: "800",
-              color: "#0f172a",
-              marginBottom: "8px"
-            }}
-          >
-            Visitor Analytics
-          </h2>
-
-          <p
-            style={{
-              color: "#64748b",
-              marginBottom: "24px"
-            }}
-          >
-            Operational insights and visitor statistics
-          </p>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                isMobile
-                ? "1fr"
-                : "repeat(3, 1fr)",
-              gap: "16px"
-            }}
-          >
-
-            <div style={analyticsBox}>
-
-              <p style={analyticsTitle}>
-                Most Common Purpose
-              </p>
-
-              <h3 style={analyticsValueText}>
-                {mostCommonPurpose}
-              </h3>
-
-            </div>
-
-            <div style={analyticsBox}>
-
-              <p style={analyticsTitle}>
-                Checked In Visitors
-              </p>
-
-              <h3 style={analyticsValueText}>
-
-                {
-
-                  visitors.filter(
-                    (v) =>
-                      v.status === "Checked In"
-                  ).length
-
-                }
-
-              </h3>
-
-            </div>
-
-            <div style={analyticsBox}>
-
-              <p style={analyticsTitle}>
-                Checked Out Visitors
-              </p>
-
-              <h3 style={analyticsValueText}>
-
-                {
-
-                  visitors.filter(
-                    (v) =>
-                      v.status === "Checked Out"
-                  ).length
-
-                }
-
-              </h3>
 
             </div>
 
@@ -1249,10 +1054,10 @@ const sidebarButtonActive = {
   ...sidebarButton,
 
   background:
-    "rgba(255,255,255,0.18)",
+    "rgba(255,255,255,0.15)",
 
   fontWeight:
-    "700"
+    "600"
 
 };
 
@@ -1287,29 +1092,38 @@ const miniCard = {
     "white",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #e2e8f0",
 
   borderRadius:
-    "14px",
+    "12px",
 
   padding:
-    "16px",
+    "20px",
 
   textAlign:
-    "center" as const
+    "center" as const,
+
+  boxShadow:
+    "0 2px 8px rgba(15,23,42,0.04)"
 
 };
 
 const miniLabel = {
 
   fontSize:
-    "12px",
+    "11px",
 
   color:
     "#64748b",
 
   marginBottom:
-    "6px"
+    "10px",
+
+  fontWeight: "500",
+
+  letterSpacing: "0.3px",
+
+  textTransform: "uppercase"
 
 };
 
@@ -1318,41 +1132,49 @@ const miniValue = {
   margin: 0,
 
   fontSize:
-    "28px",
+    "32px",
 
   fontWeight:
-    "800",
+    "700",
 
   color:
-    "#0f172a"
+    "#0f172a",
+
+  letterSpacing: "-0.3px"
 
 };
 
 const filterButton = {
 
   padding:
-    "13px 16px",
+    "12px 16px",
 
   border:
     "none",
 
   borderRadius:
-    "14px",
+    "10px",
 
   background:
-    "#2563eb",
+    "#008779eb",
 
   color:
     "white",
 
   fontWeight:
-    "700",
+    "600",
 
   cursor:
     "pointer",
 
   fontSize:
-    "14px"
+    "14px",
+
+  transition:
+    "all 0.2s ease",
+
+  boxShadow:
+    "0 2px 8px rgba(58, 209, 183, 0.3)"
 };
 
 const tableHeader = {
@@ -1361,19 +1183,23 @@ const tableHeader = {
     "left" as const,
 
   padding:
-    "14px",
+    "16px",
 
   fontSize:
-    "14px",
+    "12px",
 
   color:
-    "#334155",
+    "#475569",
 
   borderBottom:
-    "1px solid #dbe4f0",
+    "1px solid #e2e8f0",
 
   whiteSpace:
-    "nowrap"
+    "nowrap",
+
+  fontWeight: "600",
+
+  letterSpacing: "0.2px"
 
 };
 
@@ -1421,39 +1247,5 @@ const checkoutButton = {
 
   whiteSpace:
     "nowrap"
-
-};
-
-const analyticsBox = {
-
-  background: "#f8fafc",
-
-  border: "1px solid #e2e8f0",
-
-  borderRadius: "16px",
-
-  padding: "20px"
-
-};
-
-const analyticsTitle = {
-
-  color: "#64748b",
-
-  fontSize: "13px",
-
-  marginBottom: "10px"
-
-};
-
-const analyticsValueText = {
-
-  fontSize: "24px",
-
-  fontWeight: "800",
-
-  color: "#0f172a",
-
-  margin: 0
 
 };

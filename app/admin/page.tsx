@@ -16,7 +16,7 @@ export default function AdminPage() {
     useState(false);
 
   const [activeSection, setActiveSection] =
-    useState("details");
+    useState("reports");
 
   const [search, setSearch] =
     useState("");
@@ -24,16 +24,16 @@ export default function AdminPage() {
   const [filterType, setFilterType] =
     useState("all");
 
-  const [selectedDate, setSelectedDate] =
-    useState("");
+  const [fromDate, setFromDate] =
+  useState("");
+
+  const [toDate, setToDate] =
+  useState("");
 
   const detailsRef =
     useRef<HTMLDivElement>(null);
 
   const reportsRef =
-    useRef<HTMLDivElement>(null);
-
-  const analyticsRef =
     useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,21 +55,6 @@ export default function AdminPage() {
           }
         );
 
-      if (!response.ok) {
-
-        if (
-          response.status === 401
-        ) {
-
-          window.location.href =
-            "/login";
-
-          return;
-
-        }
-
-      }
-
       const data =
         await response.json();
 
@@ -85,21 +70,16 @@ export default function AdminPage() {
 
     catch (error) {
 
-      console.error(
-        "Fetch visitors error:",
-        error
-      );
-
-      setVisitors([]);
+      console.log(error);
 
     }
 
   };
 
-  const scrollToSection = (
+  function scrollToSection(
     section: string,
     ref: any
-  ) => {
+  ) {
 
     setActiveSection(section);
 
@@ -109,82 +89,97 @@ export default function AdminPage() {
 
     setSidebarOpen(false);
 
-  };
+  }
+
+const selectedVisitors =
+
+  fromDate && toDate
+
+  ?
+
+  visitors.filter(
+    (visitor: any) => {
+
+      if (
+        !visitor.check_in_time
+      ) {
+
+        return false;
+
+      }
+
+      const visitorDate =
+        new Date(
+          visitor.check_in_time
+        );
+
+      const startDate =
+        new Date(fromDate);
+
+      const endDate =
+        new Date(toDate);
+
+      endDate.setHours(
+        23,
+        59,
+        59,
+        999
+      );
+
+      return (
+        visitorDate >= startDate &&
+        visitorDate <= endDate
+      );
+
+    }
+
+  )
+  :
+
+    visitors;
 
   const filteredVisitors =
-    (visitors || []).filter(
+    selectedVisitors.filter(
       (visitor: any) => {
 
         const query =
           search.toLowerCase();
 
-        const visitorDate =
-          visitor.check_in_time
-
-            ? new Date(
-                visitor.check_in_time
-              ).toLocaleDateString(
-                "en-GB"
-              )
-
-            : "";
-
-        const matchesDate =
-          !selectedDate ||
-
-          visitorDate ===
-            selectedDate;
-
         if (!query) {
 
-          return matchesDate;
+          return true;
 
         }
-
-        let matchesSearch =
-          false;
 
         switch (filterType) {
 
           case "visitor":
 
-            matchesSearch =
-              visitor.full_name
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.full_name
+              ?.toLowerCase()
+              .includes(query);
 
           case "employee":
 
-            matchesSearch =
-              visitor.person_to_meet
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.person_to_meet
+              ?.toLowerCase()
+              .includes(query);
 
           case "mobile":
 
-            matchesSearch =
-              visitor.mobile_number
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.mobile_number
+              ?.toLowerCase()
+              .includes(query);
 
           case "code":
 
-            matchesSearch =
-              visitor.visitor_code
-                ?.toLowerCase()
-                .includes(query);
-
-            break;
+            return visitor.visitor_code
+              ?.toLowerCase()
+              .includes(query);
 
           default:
 
-            matchesSearch = (
+            return (
 
               visitor.full_name
                 ?.toLowerCase()
@@ -212,103 +207,144 @@ export default function AdminPage() {
 
         }
 
-        return (
-          matchesSearch &&
-          matchesDate
-        );
-
       }
     );
+      const analytics = useMemo(() => {
 
-  const checkedInVisitors =
-    visitors.filter(
-      (visitor) =>
-        visitor.status ===
-        "Checked In"
-    );
+    const checkedInVisitors =
+      selectedVisitors.filter(
+        (visitor: any) =>
+          visitor.status ===
+          "Checked In"
+      );
 
-  const checkedOutVisitors =
-    visitors.filter(
-      (visitor) =>
-        visitor.status ===
-        "Checked Out"
-    );
+    const employeeCount: any = {};
 
-  const todayVisitors =
-    visitors.filter(
-      (visitor) => {
-
-        if (
-          !visitor.check_in_time
-        ) {
-
-          return false;
-
-        }
-
-        return (
-
-          new Date(
-            visitor.check_in_time
-          ).toDateString()
-
-          ===
-
-          new Date()
-            .toDateString()
-
-        );
-
-      }
-    );
-
-  const analytics = useMemo(() => {
-
-    const revisitMap: any = {};
-
-    const employeeMap: any = {};
-
-    const purposeMap: any = {};
-
-    const hourMap: any = {};
-
-    visitors.forEach(
+    selectedVisitors.forEach(
       (visitor: any) => {
 
-        const mobile =
-          visitor.mobile_number || "-";
+        const employee =
+          visitor.person_to_meet
+            ?.trim();
 
-        if (
-          !revisitMap[mobile]
-        ) {
+        if (!employee) {
 
-          revisitMap[mobile] = {
-
-            count: 0,
-
-            name:
-              visitor.full_name || "-",
-
-            mobile
-
-          };
+          return;
 
         }
 
-        revisitMap[mobile]
-          .count += 1;
+        employeeCount[employee] =
+          (employeeCount[employee] || 0) + 1;
 
-        const employee =
-          visitor.person_to_meet || "-";
+      }
+    );
 
-        employeeMap[employee] =
-          (employeeMap[employee] || 0) + 1;
+    const frequentEmployee =
 
-        const purpose =
-          visitor.purpose_of_visit || "-";
+      Object.entries(employeeCount)
+        .reduce(
+          (max: any, current: any) =>
 
-        purposeMap[purpose] =
-          (purposeMap[purpose] || 0) + 1;
+            current[1] >
+            (max[1] || 0)
+
+            ? current
+
+            : max,
+
+          [null, 0]
+        )[0]
+
+      || "N/A";
+
+    const visitorCount: any = {};
+
+    selectedVisitors.forEach((visitor: any) => {
+
+      const name =
+        visitor.full_name
+          ?.trim()
+          .toLowerCase();
+
+      const mobile =
+        visitor.mobile_number
+          ?.trim();
+
+      if (!name || !mobile) {
+
+        return;
+
+      }
+
+      const key =
+        `${name}-${mobile}`;
+
+      if (!visitorCount[key]) {
+
+        visitorCount[key] = {
+
+          displayName:
+            visitor.full_name,
+
+          count: 0
+
+        };
+
+      }
+
+      visitorCount[key].count++;
+
+    });
+
+    const frequentVisitor =
+
+      (
+        Object.values(visitorCount)
+          .sort(
+            (a: any, b: any) =>
+              b.count - a.count
+          )[0] as any
+      )?.displayName
+
+      || "N/A";
+
+    const reasonCount: any = {};
+
+    selectedVisitors.forEach(
+      (visitor: any) => {
+
+        const reason =
+          visitor.purpose_of_visit
+          || "Unknown";
+
+        reasonCount[reason] =
+          (reasonCount[reason] || 0) + 1;
+
+      }
+    );
+
+    const commonReason =
+
+      Object.entries(reasonCount)
+        .reduce(
+          (max: any, current: any) =>
+
+            current[1] >
+            (max[1] || 0)
+
+            ? current
+
+            : max,
+
+          [null, 0]
+        )[0]
+
+      || "N/A";
+
+    const hourCount: any = {};
+
+    checkedInVisitors.forEach(
+      (visitor: any) => {
 
         if (
           visitor.check_in_time
@@ -319,82 +355,80 @@ export default function AdminPage() {
               visitor.check_in_time
             ).getHours();
 
-          hourMap[hour] =
-            (hourMap[hour] || 0) + 1;
+          hourCount[hour] =
+            (hourCount[hour] || 0) + 1;
 
         }
 
       }
     );
 
-    const topVisitor =
-      Object.values(
-        revisitMap
-      ).sort(
-        (a: any, b: any) =>
-          b.count - a.count
-      )[0] as any;
-
-    const topEmployee =
-      Object.entries(
-        employeeMap
-      ).sort(
-        (a: any, b: any) =>
-          Number(b[1]) -
-          Number(a[1])
-      )[0];
-
-    const topPurpose =
-      Object.entries(
-        purposeMap
-      ).sort(
-        (a: any, b: any) =>
-          Number(b[1]) -
-          Number(a[1])
-      )[0];
-
     const peakHour =
-      Object.entries(
-        hourMap
-      ).sort(
-        (a: any, b: any) =>
-          Number(b[1]) -
-          Number(a[1])
-      )[0];
+
+      Object.entries(hourCount)
+        .reduce(
+          (max: any, current: any) =>
+
+            current[1] >
+            (max[1] || 0)
+
+            ? current
+
+            : max,
+
+          [null, 0]
+        )[0];
+
+    const peakHourDisplay =
+
+      peakHour !== null &&
+      peakHour !== undefined
+
+      ?
+
+      `${String(peakHour)
+        .padStart(2, "0")}:00`
+
+      :
+
+      "N/A";
 
     return {
 
-      visitorName:
-        topVisitor?.name || "-",
+      total:
+        selectedVisitors.length,
 
-      visitorMobile:
-        topVisitor?.mobile || "-",
+      checkedIn:
+        checkedInVisitors.length,
 
-      revisitCount:
-        topVisitor?.count || 0,
+      checkedOut:
+        selectedVisitors.filter(
+          (visitor: any) =>
+            visitor.status ===
+            "Checked Out"
+        ).length,
 
-      employee:
-        topEmployee?.[0] || "-",
+      frequentEmployee,
 
-      purpose:
-        topPurpose?.[0] || "-",
+      frequentVisitor,
+
+      commonReason,
 
       peakHour:
-        peakHour?.[0] || "-"
+        peakHourDisplay
 
     };
 
-  }, [visitors]);
+  }, [selectedVisitors, visitors]);
 
   return (
-
-    <div
+        <div
       style={{
         minHeight: "100vh",
         background: "#eef4fb",
         fontFamily:
           "Arial, sans-serif",
-        overflowX: "hidden"
+        position: "relative"
       }}
     >
 
@@ -406,28 +440,28 @@ export default function AdminPage() {
         }
         style={{
           position: "fixed",
-          top: "22px",
-          left: "22px",
-          width: "58px",
-          height: "58px",
-          borderRadius: "18px",
+          top: "20px",
+          left: "20px",
+          width: "44px",
+          height: "44px",
+          borderRadius: "12px",
           border: "none",
           background: "#0f172a",
           color: "white",
-          fontSize: "24px",
+          fontSize: "20px",
           fontWeight: "700",
           cursor: "pointer",
           zIndex: 200,
           boxShadow:
-            "0 10px 30px rgba(15,23,42,0.18)"
+            "0 4px 12px rgba(15,23,42,0.2)",
+          display:
+            sidebarOpen
+            ? "none"
+            : "block"
         }}
       >
 
-        {
-          sidebarOpen
-          ? "×"
-          : "☰"
-        }
+        ☰
 
       </button>
 
@@ -455,14 +489,15 @@ export default function AdminPage() {
                 position: "fixed",
                 top: 0,
                 left: 0,
-                width: "270px",
+                width: "260px",
                 height: "100vh",
                 background: "#020617",
                 padding:
-                  "100px 18px 24px",
+                  "24px 16px",
                 zIndex: 100,
                 display: "flex",
-                flexDirection: "column",
+                flexDirection:
+                  "column",
                 justifyContent:
                   "space-between"
               }}
@@ -472,38 +507,82 @@ export default function AdminPage() {
 
                 <div
                   style={{
+                    display: "flex",
+                    justifyContent:
+                      "space-between",
+                    alignItems:
+                      "center",
                     marginBottom:
-                      "36px"
+                      "28px"
                   }}
                 >
 
-                  <h1
-                    style={{
-                      color: "white",
-                      fontSize: "28px",
-                      fontWeight: "800",
-                      marginBottom: "6px"
-                    }}
-                  >
-                    VisitorOS
-                  </h1>
+                  <div>
 
-                  <p
+                    <h1
+                      style={{
+                        color:
+                          "white",
+                        fontSize:
+                          "26px",
+                        fontWeight:
+                          "800",
+                        marginBottom:
+                          "4px"
+                      }}
+                    >
+                      VisitorOS
+                    </h1>
+
+                    <p
+                      style={{
+                        color:
+                          "#94a3b8",
+                        fontSize:
+                          "12px"
+                      }}
+                    >
+                      Admin Portal
+                    </p>
+
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      setSidebarOpen(false)
+                    }
                     style={{
-                      color: "#94a3b8",
-                      fontSize: "13px"
+                      background:
+                        "rgba(255,255,255,0.1)",
+                      border:
+                        "none",
+                      color:
+                        "white",
+                      width:
+                        "36px",
+                      height:
+                        "36px",
+                      borderRadius:
+                        "10px",
+                      cursor:
+                        "pointer",
+                      fontSize:
+                        "18px"
                     }}
                   >
-                    Admin Portal
-                  </p>
+                    ✕
+                  </button>
 
                 </div>
 
                 <div
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px"
+                    display:
+                      "flex",
+                    flexDirection:
+                      "column",
+                    gap:
+                      "12px"
                   }}
                 >
 
@@ -522,23 +601,6 @@ export default function AdminPage() {
                     }
                   >
                     Visitor Details
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      scrollToSection(
-                        "reports",
-                        reportsRef
-                      )
-                    }
-                    style={
-                      activeSection ===
-                      "reports"
-                      ? sidebarActive
-                      : sidebarButton
-                    }
-                  >
-                    Reports
                   </button>
 
                   <button
@@ -563,14 +625,7 @@ export default function AdminPage() {
               </div>
 
               <button
-                onClick={async () => {
-
-                  await fetch(
-                    "/api/auth/logout",
-                    {
-                      method: "POST"
-                    }
-                  );
+                onClick={() => {
 
                   window.location.href =
                     "/login";
@@ -592,13 +647,164 @@ export default function AdminPage() {
       <main
         style={{
           padding:
-            "100px 24px 30px"
+            "80px 24px 30px",
+          maxWidth:
+            "1400px",
+          margin:
+            "0 auto"
         }}
-      >
+    
+>
+          <div
+          ref={reportsRef}
+          style={{
+            ...sectionCard,
+            marginTop: "24px"
+          }}
+        >
+
+          <h2 style={sectionTitle}>
+            Reports
+          </h2>
+
+          <p style={sectionSub}>
+            Total and date-based visitor reports
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent:
+                "space-between",
+              alignItems:
+                "center",
+              marginTop: "22px",
+              marginBottom:
+                "22px",
+              flexWrap:
+                "wrap",
+              gap: "12px"
+            }}
+          >
+
+            <h3
+              style={{
+                fontSize:
+                  "20px",
+                fontWeight:
+                  "700",
+                color:
+                  "#0f172a"
+              }}
+            >
+
+              {
+
+               fromDate && toDate
+
+?
+
+`Reports from ${fromDate} to ${toDate}`
+
+:
+
+"Total Reports"
+
+              }
+
+            </h3>
+
+            <div
+          
+  style={{
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap"
+  }}
+>
+
+  <input
+    type="date"
+    value={fromDate}
+    onChange={(e) =>
+      setFromDate(
+        e.target.value
+      )
+    }
+    style={filterInput}
+  />
+
+  <input
+    type="date"
+    value={toDate}
+    onChange={(e) =>
+      setToDate(
+        e.target.value
+      )
+    }
+    style={filterInput}
+  />
+  </div>
+
+</div>
+
+          <div
+            style={{
+              display:
+                "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit,minmax(220px,1fr))",
+              gap:
+                "18px"
+            }}
+          >
+
+            <div style={reportCard}>
+
+              <p style={cardLabel}>
+                Total Visitors
+              </p>
+
+              <h1 style={cardValue}>
+                {analytics.total}
+              </h1>
+
+            </div>
+
+            <div style={reportCard}>
+
+              <p style={cardLabel}>
+                Checked In
+              </p>
+
+              <h1 style={cardValue}>
+                {analytics.checkedIn}
+              </h1>
+
+            </div>
+
+            <div style={reportCard}>
+
+              <p style={cardLabel}>
+                Checked Out
+              </p>
+
+              <h1 style={cardValue}>
+                {analytics.checkedOut}
+              </h1>
+
+            </div>
+
+          </div>
+
+        </div>
 
         <div
           ref={detailsRef}
-          style={sectionCard}
+          style={{
+            ...sectionCard,
+            marginTop: "24px"
+          }}
         >
 
           <h2 style={sectionTitle}>
@@ -611,11 +817,16 @@ export default function AdminPage() {
 
           <div
             style={{
-              display: "flex",
-              gap: "12px",
-              flexWrap: "wrap",
-              marginTop: "22px",
-              marginBottom: "22px"
+              display:
+                "flex",
+              gap:
+                "12px",
+              flexWrap:
+                "wrap",
+              marginTop:
+                "22px",
+              marginBottom:
+                "22px"
             }}
           >
 
@@ -663,55 +874,23 @@ export default function AdminPage() {
               style={searchInput}
             />
 
-            <input
-              type="text"
-              placeholder="DD/MM/YYYY"
-              value={selectedDate}
-              onChange={(e) => {
-
-                let value =
-                  e.target.value
-                    .replace(/\D/g, "");
-
-                if (value.length >= 3) {
-
-                  value =
-                    value.slice(0, 2) +
-                    "/" +
-                    value.slice(2);
-
-                }
-
-                if (value.length >= 6) {
-
-                  value =
-                    value.slice(0, 5) +
-                    "/" +
-                    value.slice(5, 9);
-
-                }
-
-                setSelectedDate(value);
-
-              }}
-              maxLength={10}
-              style={filterInput}
-            />
-
           </div>
 
           <div
             style={{
-              overflowX: "auto"
+              overflowX:
+                "auto"
             }}
           >
 
             <table
               style={{
-                width: "100%",
+                width:
+                  "100%",
                 borderCollapse:
                   "collapse",
-                minWidth: "1200px"
+                minWidth:
+                  "1200px"
               }}
             >
 
@@ -761,8 +940,7 @@ export default function AdminPage() {
               </thead>
 
               <tbody>
-
-                {
+                                {
 
                   filteredVisitors.map(
                     (visitor: any) => (
@@ -830,9 +1008,11 @@ export default function AdminPage() {
                               borderRadius:
                                 "999px",
 
-                              fontSize: "12px",
+                              fontSize:
+                                "12px",
 
-                              fontWeight: "700"
+                              fontWeight:
+                                "700"
 
                             }}
                           >
@@ -851,20 +1031,24 @@ export default function AdminPage() {
 
                             visitor.check_in_time
 
-                            ? new Date(
-                                visitor.check_in_time
-                              ).toLocaleString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit"
-                                }
-                              )
+                            ?
 
-                            : "-"
+                            new Date(
+                              visitor.check_in_time
+                            ).toLocaleString(
+                              "en-IN",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              }
+                            )
+
+                            :
+
+                            "-"
 
                           }
 
@@ -876,20 +1060,24 @@ export default function AdminPage() {
 
                             visitor.check_out_time
 
-                            ? new Date(
-                                visitor.check_out_time
-                              ).toLocaleString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit"
-                                }
-                              )
+                            ?
 
-                            : "-"
+                            new Date(
+                              visitor.check_out_time
+                            ).toLocaleString(
+                              "en-IN",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              }
+                            )
+
+                            :
+
+                            "-"
 
                           }
 
@@ -910,190 +1098,108 @@ export default function AdminPage() {
 
         </div>
 
-        <div
-          ref={reportsRef}
-          style={{
-            ...sectionCard,
-            marginTop: "24px"
-          }}
-        >
+        {
 
-          <h2 style={sectionTitle}>
-            Reports
-          </h2>
+          activeSection ===
+          "analytics"
 
-          <p style={sectionSub}>
-            Operational visitor summaries
-          </p>
+          && (
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit,minmax(220px,1fr))",
-              gap: "18px",
-              marginTop: "22px"
-            }}
-          >
+            <div
+              ref={analyticsRef}
+              style={{
+                ...sectionCard,
+                marginTop:
+                  "24px",
+                marginBottom:
+                  "30px"
+              }}
+            >
 
-            <div style={reportCard}>
+              <h2 style={sectionTitle}>
+                Analytics
+              </h2>
 
-              <p style={cardLabel}>
-                Total Visitors
+              <p style={sectionSub}>
+                Visitor behavior insights
               </p>
 
-              <h1 style={cardValue}>
-                {
-                  visitors.length
-                }
-              </h1>
+              <div
+                style={{
+                  marginTop:
+                    "24px",
+                  display:
+                    "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit,minmax(260px,1fr))",
+                  gap:
+                    "18px"
+                }}
+              >
+
+                <div style={reportCard}>
+
+                  <h3 style={analyticsTitle}>
+                    Frequently Visited Employee
+                  </h3>
+
+                  <p style={analyticsText}>
+                    {
+                      analytics.frequentEmployee
+                    }
+                  </p>
+
+                </div>
+
+                <div style={reportCard}>
+
+                  <h3 style={analyticsTitle}>
+                    Frequently Visited Visitor
+                  </h3>
+
+                  <p style={analyticsText}>
+                    {
+                      analytics.frequentVisitor
+                    }
+                  </p>
+
+                </div>
+
+                <div style={reportCard}>
+
+                  <h3 style={analyticsTitle}>
+                    Common Reason
+                  </h3>
+
+                  <p style={analyticsText}>
+                    {
+                      analytics.commonReason
+                    }
+                  </p>
+
+                </div>
+
+                <div style={reportCard}>
+
+                  <h3 style={analyticsTitle}>
+                    Peak Hours
+                  </h3>
+
+                  <p style={analyticsText}>
+                    {
+                      analytics.peakHour
+                    }
+                  </p>
+
+                </div>
+
+              </div>
 
             </div>
 
-            <div style={reportCard}>
+          )
 
-              <p style={cardLabel}>
-                Checked In
-              </p>
-
-              <h1 style={cardValue}>
-                {
-                  checkedInVisitors.length
-                }
-              </h1>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Checked Out
-              </p>
-
-              <h1 style={cardValue}>
-                {
-                  checkedOutVisitors.length
-                }
-              </h1>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Today's Visitors
-              </p>
-
-              <h1 style={cardValue}>
-                {
-                  todayVisitors.length
-                }
-              </h1>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <div
-          ref={analyticsRef}
-          style={{
-            ...sectionCard,
-            marginTop: "24px",
-            marginBottom: "30px"
-          }}
-        >
-
-          <h2 style={sectionTitle}>
-            Analytics
-          </h2>
-
-          <p style={sectionSub}>
-            Visitor behavior insights
-          </p>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit,minmax(260px,1fr))",
-              gap: "18px",
-              marginTop: "22px"
-            }}
-          >
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Most Frequent Visitor
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.visitorName
-                }
-              </h3>
-
-              <p style={analyticsText}>
-                {
-                  analytics.visitorMobile
-                }
-              </p>
-
-              <p style={analyticsText}>
-                {
-                  analytics.revisitCount
-                } revisits
-              </p>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Most Visited Employee
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.employee
-                }
-              </h3>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Top Purpose
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.purpose
-                }
-              </h3>
-
-            </div>
-
-            <div style={reportCard}>
-
-              <p style={cardLabel}>
-                Peak Hour
-              </p>
-
-              <h3 style={analyticsTitle}>
-                {
-                  analytics.peakHour
-                }:00
-              </h3>
-
-            </div>
-
-          </div>
-
-        </div>
+        }
 
       </main>
 
@@ -1102,29 +1208,32 @@ export default function AdminPage() {
   );
 
 }
-
 const sectionCard = {
 
   background: "white",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #e2e8f0",
 
-  borderRadius: "24px",
+  borderRadius: "16px",
 
-  padding: "26px",
+  padding: "32px",
 
   boxShadow:
-    "0 10px 30px rgba(15,23,42,0.04)"
+    "0 2px 8px rgba(15,23,42,0.06)"
 };
 
 const sectionTitle = {
 
-  fontSize: "32px",
+  fontSize: "26px",
 
-  fontWeight: "800",
+  fontWeight: "700",
 
-  color: "#0f172a"
+  color: "#0f172a",
+
+  marginBottom: "12px",
+
+  letterSpacing: "-0.3px"
 };
 
 const sectionSub = {
@@ -1142,12 +1251,12 @@ const searchInput = {
 
   minWidth: "260px",
 
-  padding: "15px 16px",
+  padding: "12px 14px",
 
-  borderRadius: "16px",
+  borderRadius: "10px",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #cbd5e1",
 
   background: "#ffffff",
 
@@ -1158,12 +1267,12 @@ const searchInput = {
 
 const filterInput = {
 
-  padding: "15px 16px",
+  padding: "12px 14px",
 
-  borderRadius: "16px",
+  borderRadius: "10px",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #cbd5e1",
 
   background: "#ffffff",
 
@@ -1176,35 +1285,45 @@ const tableHeader = {
 
   textAlign: "left" as const,
 
-  padding: "18px",
+  padding: "16px",
 
   color: "#475569",
 
   fontSize: "12px",
 
-  fontWeight: "800"
+  fontWeight: "600",
+
+  borderBottom:
+    "1px solid #e2e8f0",
+
+  whiteSpace:
+    "nowrap" as const
 };
 
 const tableCell = {
 
-  padding: "18px",
+  padding: "14px",
 
-  borderTop:
+  borderBottom:
     "1px solid #f1f5f9",
 
-  color: "#0f172a",
+  color: "#334155",
 
-  fontSize: "14px"
+  fontSize: "14px",
+
+  verticalAlign:
+    "middle" as const
 };
 
 const reportCard = {
 
-  background: "#f8fafc",
+  background:
+    "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
 
   border:
-    "1px solid #dbe4f0",
+    "1px solid #e2e8f0",
 
-  borderRadius: "20px",
+  borderRadius: "14px",
 
   padding: "24px"
 };
@@ -1213,38 +1332,50 @@ const cardLabel = {
 
   color: "#64748b",
 
-  fontSize: "13px",
+  fontSize: "12px",
 
-  marginBottom: "14px"
+  marginBottom: "12px",
+
+  fontWeight: "500",
+
+  textTransform:
+    "uppercase" as const
 };
 
 const cardValue = {
 
-  fontSize: "52px",
-
-  fontWeight: "800",
-
-  color: "#0f172a"
-};
-
-const analyticsTitle = {
-
-  fontSize: "22px",
+  fontSize: "42px",
 
   fontWeight: "700",
 
   color: "#0f172a",
 
-  marginBottom: "8px"
+  margin: 0
+};
+
+const analyticsTitle = {
+
+  fontSize: "12px",
+
+  fontWeight: "500",
+
+  color: "#64748b",
+
+  marginBottom: "12px",
+
+  textTransform:
+    "uppercase" as const
 };
 
 const analyticsText = {
 
-  color: "#475569",
+  color: "#0f172a",
 
-  fontSize: "14px",
+  fontSize: "28px",
 
-  marginTop: "6px"
+  fontWeight: "700",
+
+  margin: 0
 };
 
 const sidebarButton = {
@@ -1255,17 +1386,18 @@ const sidebarButton = {
 
   color: "#cbd5e1",
 
-  padding: "14px 16px",
+  padding: "12px 14px",
 
-  borderRadius: "14px",
+  borderRadius: "8px",
 
   cursor: "pointer",
 
   fontSize: "14px",
 
-  fontWeight: "600",
+  fontWeight: "500",
 
-  textAlign: "left" as const,
+  textAlign:
+    "left" as const,
 
   width: "100%"
 };
@@ -1275,9 +1407,11 @@ const sidebarActive = {
   ...sidebarButton,
 
   background:
-    "rgba(255,255,255,0.12)",
+    "rgba(255,255,255,0.15)",
 
-  color: "white"
+  color: "white",
+
+  fontWeight: "600"
 };
 
 const logoutButton = {
@@ -1289,9 +1423,9 @@ const logoutButton = {
 
   color: "white",
 
-  padding: "15px",
+  padding: "13px",
 
-  borderRadius: "16px",
+  borderRadius: "10px",
 
   cursor: "pointer",
 
