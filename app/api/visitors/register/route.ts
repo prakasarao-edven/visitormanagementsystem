@@ -3,6 +3,9 @@ import {
   NextResponse
 } from "next/server";
 
+import fs from "fs";
+import path from "path";
+
 import {
   pool
 } from "@/lib/db/connection";
@@ -10,6 +13,46 @@ import {
 import {
   generateVisitorCode
 } from "@/lib/utils/codeGenerator";
+
+function savePhoto(
+  visitorCode: string,
+  photo: string
+) {
+
+  const matches =
+    photo.match(
+      /^data:image\/(\w+);base64,(.+)$/
+    );
+
+  if (!matches) return null;
+
+  const extension =
+    matches[1] === "jpeg" ? "jpg" : matches[1];
+
+  const uploadsDir =
+    path.join(
+      process.cwd(),
+      "public",
+      "uploads",
+      "visitors"
+    );
+
+  fs.mkdirSync(
+    uploadsDir,
+    { recursive: true }
+  );
+
+  const fileName =
+    `${visitorCode}.${extension}`;
+
+  fs.writeFileSync(
+    path.join(uploadsDir, fileName),
+    Buffer.from(matches[2], "base64")
+  );
+
+  return `/uploads/visitors/${fileName}`;
+
+}
 
 export async function POST(
   request: NextRequest
@@ -35,20 +78,24 @@ export async function POST(
 
       personToMeet,
 
-      remarks
+      remarks,
+
+      photo
 
     } = await request.json();
 
     if (
       !fullName ||
-      !mobileNumber
+      !mobileNumber ||
+      !purposeOfVisit ||
+      !photo
     ) {
 
       return NextResponse.json(
 
         {
           error:
-            "Full name and mobile number are required"
+            "Full name, mobile number, purpose of visit and photo are required"
         },
 
         {
@@ -142,117 +189,11 @@ export async function POST(
 
     try {
 
-      const [existingVisitors] =
-        await connection.query(
-
-          `
-          SELECT *
-
-          FROM visitors
-
-          WHERE mobile_number = ?
-
-          ORDER BY id DESC
-
-          LIMIT 1
-          `,
-
-          [
-            finalMobile
-          ]
-
-        );
-
-      const existingVisitor =
-        (existingVisitors as any[])[0];
-
-      if (existingVisitor) {
-
-        await connection.query(
-
-          `
-          INSERT INTO visitors (
-
-            visitor_code,
-
-            full_name,
-
-            mobile_number,
-
-            email,
-
-            purpose_of_visit,
-
-            person_to_meet,
-
-            id_proof_type,
-
-            id_proof_number,
-
-            remarks,
-
-            status,
-
-            check_in_time
-
-          )
-
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-          `,
-
-          [
-
-            generateVisitorCode(),
-
-            existingVisitor.full_name,
-
-            existingVisitor.mobile_number,
-
-            existingVisitor.email || null,
-
-            purposeOfVisit ||
-            existingVisitor.purpose_of_visit ||
-            null,
-
-            personToMeet ||
-            existingVisitor.person_to_meet ||
-            null,
-
-            existingVisitor.id_proof_type || null,
-
-            existingVisitor.id_proof_number || null,
-
-            remarks || null,
-
-            "Checked In"
-
-          ]
-
-        );
-
-        return NextResponse.json(
-
-          {
-
-            success: true,
-
-            returningVisitor: true,
-
-            message:
-              "Welcome back visitor checked in successfully"
-
-          },
-
-          {
-            status: 200
-          }
-
-        );
-
-      }
-
       const visitorCode =
         generateVisitorCode();
+
+      const photoUrl =
+        photo ? savePhoto(visitorCode, photo) : null;
 
       const [result] =
         await connection.query(
@@ -278,13 +219,15 @@ export async function POST(
 
             remarks,
 
+            photo_url,
+
             status,
 
             check_in_time
 
           )
 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
           `,
 
           [
@@ -306,6 +249,8 @@ export async function POST(
             idProofNumber || null,
 
             remarks || null,
+
+            photoUrl,
 
             "Checked In"
 

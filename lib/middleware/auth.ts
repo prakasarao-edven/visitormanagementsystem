@@ -119,3 +119,30 @@ export async function requireSecurity(
   return true;
 
 }
+
+export async function requireCheckoutAccess(
+  request: NextRequest
+) {
+
+  const payload =
+    await verifyAuth(
+      request
+    );
+
+  if (
+
+    !payload ||
+
+    !["SECURITY", "ADMIN", "SUPER_ADMIN"].includes(
+      payload.role as string
+    )
+
+  ) {
+
+    return false;
+
+  }
+
+  return true;
+
+}

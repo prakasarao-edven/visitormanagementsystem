@@ -187,9 +187,9 @@ export default function HomePage() {
                   "24px"
               }}
             >
-              Modern Visitor
+              Visitor
               Management
-              Simplified.
+              System
             </h2>
 
             <p
@@ -211,79 +211,6 @@ export default function HomePage() {
               designed for offices campuses
               institutions and enterprises.
             </p>
-
-            <div
-              style={{
-                display:
-                  "flex",
-                gap:
-                  "18px",
-                flexWrap:
-                  "wrap"
-              }}
-            >
-
-              <button
-                onClick={() => {
-
-                  window.location.href =
-                    "/visitor-registration";
-
-                }}
-                style={{
-                  padding:
-                    "18px 34px",
-                  borderRadius:
-                    "16px",
-                  border:
-                    "none",
-                  background:
-                    "#007e87",
-                  color:
-                    "white",
-                  fontWeight:
-                    "700",
-                  fontSize:
-                    "16px",
-                  cursor:
-                    "pointer",
-                  boxShadow:
-                    "0 12px 30px rgba(5, 100, 105, 0.6)"
-                }}
-              >
-                Register Visitor
-              </button>
-
-              <button
-                onClick={() => {
-
-                  window.location.href =
-                    "/login";
-
-                }}
-                style={{
-                  padding:
-                    "18px 34px",
-                  borderRadius:
-                    "16px",
-                  border:
-                    "1px solid #cbd5e1",
-                  background:
-                    "white",
-                  color:
-                    "#0f172a",
-                  fontWeight:
-                    "700",
-                  fontSize:
-                    "16px",
-                  cursor:
-                    "pointer"
-                }}
-              >
-                Open Dashboard
-              </button>
-
-            </div>
 
           </div>
 
@@ -409,38 +336,38 @@ export default function HomePage() {
 
               }
 
-              <div
+              <button
+                onClick={() => {
+
+                  window.location.href =
+                    "/visitor-registration";
+
+                }}
                 style={{
-                  display:
-                    "grid",
-                  gridTemplateColumns:
-                    "1fr 1fr",
-                  gap:
-                    "16px"
+                  width:
+                    "100%",
+                  padding:
+                    "18px 34px",
+                  borderRadius:
+                    "16px",
+                  border:
+                    "none",
+                  background:
+                    "#007e87",
+                  color:
+                    "white",
+                  fontWeight:
+                    "700",
+                  fontSize:
+                    "16px",
+                  cursor:
+                    "pointer",
+                  boxShadow:
+                    "0 12px 30px rgba(5, 100, 105, 0.6)"
                 }}
               >
-
-                <div style={miniCard}>
-                  <h4 style={miniTitle}>
-                    Admin
-                  </h4>
-
-                  <p style={miniDesc}>
-                    Full control access
-                  </p>
-                </div>
-
-                <div style={miniCard}>
-                  <h4 style={miniTitle}>
-                    Security
-                  </h4>
-
-                  <p style={miniDesc}>
-                    Monitor visitors
-                  </p>
-                </div>
-
-              </div>
+                Register Manually
+              </button>
 
             </div>
 
@@ -455,45 +382,3 @@ export default function HomePage() {
   );
 
 }
-
-const miniCard = {
-
-  background:
-    "#f8fafc",
-
-  padding:
-    "18px",
-
-  borderRadius:
-    "18px",
-
-  border:
-    "1px solid #e2e8f0"
-
-};
-
-const miniTitle = {
-
-  fontSize:
-    "18px",
-
-  fontWeight:
-    "700",
-
-  color:
-    "#0f172a",
-
-  marginBottom:
-    "6px"
-
-};
-
-const miniDesc = {
-
-  color:
-    "#64748b",
-
-  fontSize:
-    "14px"
-
-};

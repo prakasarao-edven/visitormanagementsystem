@@ -28,7 +28,7 @@ CREATE TABLE visitors (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visitor_code VARCHAR(50) NOT NULL UNIQUE,
     full_name VARCHAR(255) NOT NULL,
-    mobile_number VARCHAR(20) NOT NULL UNIQUE,
+    mobile_number VARCHAR(20) NOT NULL,
     email VARCHAR(255),
     id_proof_type VARCHAR(50),
     id_proof_number VARCHAR(100),

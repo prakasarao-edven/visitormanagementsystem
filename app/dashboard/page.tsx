@@ -192,14 +192,6 @@ export default function DashboardPage() {
 
           ||
 
-          visitor.mobile_number
-            ?.toLowerCase()
-            .includes(
-              searchTerm.toLowerCase()
-            )
-
-          ||
-
           visitor.visitor_code
             ?.toLowerCase()
             .includes(
@@ -472,7 +464,7 @@ export default function DashboardPage() {
                       sidebarButton
                     }
                   >
-                    Registrations
+                    All Visitors
                   </button>
 
                   <button
@@ -512,9 +504,15 @@ export default function DashboardPage() {
               </div>
 
               <button
-                onClick={() => {
+                onClick={async () => {
 
-                  localStorage.clear();
+                  await fetch(
+                    "/api/auth/logout",
+                    {
+                      method: "POST",
+                      credentials: "include"
+                    }
+                  );
 
                   window.location.href =
                     "/login";
@@ -658,44 +656,69 @@ export default function DashboardPage() {
 
         </div>
 
-        <input
-          type="text"
-          placeholder="Search visitors"
-          value={searchTerm}
-          onChange={(e) =>
-            setSearchTerm(
-              e.target.value
-            )
-          }
+        <div
           style={{
-            width:
-              "100%",
-
-            padding:
-              "13px 14px",
-
-            borderRadius:
-              "14px",
-
-            border:
-              "1px solid #cbd5e1",
-
-            background:
-              "white",
-
-            fontSize:
-              "14px",
-
-            outline:
-              "none",
-
-            marginBottom:
-              "14px",
-
-            boxSizing:
-              "border-box"
+            display: "flex",
+            justifyContent: "flex-end",
+            flexWrap: "wrap",
+            gap: "10px",
+            marginBottom: "14px"
           }}
-        />
+        >
+
+          <input
+            type="text"
+            placeholder="Search visitors"
+            value={searchTerm}
+            onChange={(e) =>
+              setSearchTerm(
+                e.target.value
+              )
+            }
+            style={{
+              width: "200px",
+
+              padding:
+                "10px 12px",
+
+              borderRadius:
+                "12px",
+
+              border:
+                "1px solid #cbd5e1",
+
+              background:
+                "white",
+
+              fontSize:
+                "13px",
+
+              outline:
+                "none",
+
+              boxSizing:
+                "border-box"
+            }}
+          />
+
+          <button
+            onClick={() =>
+              setShowActiveOnly(
+                !showActiveOnly
+              )
+            }
+            style={filterButton}
+          >
+
+            {
+              showActiveOnly
+              ? "Showing Active Visitors"
+              : "Show Active Only"
+            }
+
+          </button>
+
+        </div>
 
         <div
           style={{
@@ -717,7 +740,7 @@ export default function DashboardPage() {
 
           <div style={miniCard}>
             <p style={miniLabel}>
-              Headcount
+              Total Visitors
             </p>
             <h2 style={miniValue}>
               {todayVisitors.length}
@@ -756,27 +779,6 @@ export default function DashboardPage() {
 
         </div>
 
-        <button
-          onClick={() =>
-            setShowActiveOnly(
-              !showActiveOnly
-            )
-          }
-          style={{
-            ...filterButton,
-            width: "100%",
-            marginBottom: "16px"
-          }}
-        >
-
-          {
-            showActiveOnly
-            ? "Showing Active Visitors"
-            : "Show Active Only"
-          }
-
-        </button>
-
         <div ref={visitorsRef}>
 
           <div
@@ -814,7 +816,7 @@ export default function DashboardPage() {
                     "collapse",
 
                   minWidth:
-                    "1200px"
+                    "1280px"
                 }}
               >
 
@@ -827,9 +829,9 @@ export default function DashboardPage() {
                     }}
                   >
 
-                    <th style={tableHeader}>Code</th>
+                    <th style={tableHeader}>Visitor's Code</th>
+                    <th style={tableHeader}>Photo</th>
                     <th style={tableHeader}>Visitor</th>
-                    <th style={tableHeader}>Mobile</th>
                     <th style={tableHeader}>Purpose</th>
                     <th style={tableHeader}>Person To Meet</th>
                     <th style={tableHeader}>Status</th>
@@ -856,11 +858,21 @@ export default function DashboardPage() {
                         </td>
 
                         <td style={tableCell}>
-                          {visitor.full_name}
+                          {
+                            visitor.photo_url
+                            ? (
+                              <img
+                                src={visitor.photo_url}
+                                alt={visitor.full_name}
+                                style={photoThumbnail}
+                              />
+                            )
+                            : "-"
+                          }
                         </td>
 
                         <td style={tableCell}>
-                          {visitor.mobile_number}
+                          {visitor.full_name}
                         </td>
 
                         <td style={tableCell}>
@@ -1147,7 +1159,7 @@ const miniValue = {
 const filterButton = {
 
   padding:
-    "12px 16px",
+    "10px 14px",
 
   border:
     "none",
@@ -1164,11 +1176,14 @@ const filterButton = {
   fontWeight:
     "600",
 
+  fontSize:
+    "13px",
+
+  whiteSpace:
+    "nowrap" as const,
+
   cursor:
     "pointer",
-
-  fontSize:
-    "14px",
 
   transition:
     "all 0.2s ease",
@@ -1219,6 +1234,22 @@ const tableCell = {
 
   verticalAlign:
     "middle" as const
+
+};
+
+const photoThumbnail = {
+
+  width:
+    "44px",
+
+  height:
+    "44px",
+
+  objectFit:
+    "cover" as const,
+
+  borderRadius:
+    "8px"
 
 };
 

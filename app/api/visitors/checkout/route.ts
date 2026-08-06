@@ -8,7 +8,7 @@ import {
 } from "@/lib/db/connection";
 
 import {
-  requireSecurity
+  requireCheckoutAccess
 } from "@/lib/middleware/auth";
 
 export async function PUT(
@@ -17,12 +17,12 @@ export async function PUT(
 
   try {
 
-    const isSecurity =
-      await requireSecurity(
+    const canCheckOut =
+      await requireCheckoutAccess(
         request
       );
 
-    if (!isSecurity) {
+    if (!canCheckOut) {
 
       return NextResponse.json(
         {

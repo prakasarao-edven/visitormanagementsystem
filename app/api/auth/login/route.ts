@@ -155,6 +155,21 @@ export async function POST(
 
       );
 
+      await connection.query(
+
+        `
+        INSERT INTO user_sessions (user_id, login_time, ip_address, device_info)
+        VALUES (?, NOW(), ?, ?)
+        `,
+
+        [
+          user.id,
+          request.headers.get("x-forwarded-for") || null,
+          request.headers.get("user-agent") || null
+        ]
+
+      );
+
       const response =
         NextResponse.json({
 
